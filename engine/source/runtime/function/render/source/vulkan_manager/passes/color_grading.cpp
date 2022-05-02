@@ -31,15 +31,15 @@ namespace Pilot
         post_process_global_layout_input_attachment_binding.descriptorCount = 1;
         post_process_global_layout_input_attachment_binding.stageFlags      = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-        VkDescriptorSetLayoutBinding& post_process_global_layout_LUT_binding = post_process_global_layout_bindings[1];
-        post_process_global_layout_LUT_binding.binding                       = 1;
-        post_process_global_layout_LUT_binding.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        post_process_global_layout_LUT_binding.descriptorCount = 1;
-        post_process_global_layout_LUT_binding.stageFlags      = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding& post_process_global_layout_lut_binding = post_process_global_layout_bindings[1];
+        post_process_global_layout_lut_binding.binding                       = 1;
+        post_process_global_layout_lut_binding.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        post_process_global_layout_lut_binding.descriptorCount = 1;
+        post_process_global_layout_lut_binding.stageFlags      = VK_SHADER_STAGE_FRAGMENT_BIT;
 
         VkDescriptorSetLayoutCreateInfo post_process_global_layout_create_info;
         post_process_global_layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        post_process_global_layout_create_info.pNext = NULL;
+        post_process_global_layout_create_info.pNext = nullptr;
         post_process_global_layout_create_info.flags = 0;
         post_process_global_layout_create_info.bindingCount =
             sizeof(post_process_global_layout_bindings) / sizeof(post_process_global_layout_bindings[0]);
@@ -47,7 +47,7 @@ namespace Pilot
 
         if (VK_SUCCESS != vkCreateDescriptorSetLayout(m_p_vulkan_context->_device,
                                                       &post_process_global_layout_create_info,
-                                                      NULL,
+                                                      nullptr,
                                                       &_descriptor_infos[0].layout))
         {
             throw std::runtime_error("create post process global layout");
@@ -94,9 +94,9 @@ namespace Pilot
         VkPipelineVertexInputStateCreateInfo vertex_input_state_create_info {};
         vertex_input_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         vertex_input_state_create_info.vertexBindingDescriptionCount   = 0;
-        vertex_input_state_create_info.pVertexBindingDescriptions      = NULL;
+        vertex_input_state_create_info.pVertexBindingDescriptions      = nullptr;
         vertex_input_state_create_info.vertexAttributeDescriptionCount = 0;
-        vertex_input_state_create_info.pVertexAttributeDescriptions    = NULL;
+        vertex_input_state_create_info.pVertexAttributeDescriptions    = nullptr;
 
         VkPipelineInputAssemblyStateCreateInfo input_assembly_create_info {};
         input_assembly_create_info.sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -165,27 +165,27 @@ namespace Pilot
         dynamic_state_create_info.dynamicStateCount = 2;
         dynamic_state_create_info.pDynamicStates    = dynamic_states;
 
-        VkGraphicsPipelineCreateInfo pipelineInfo {};
-        pipelineInfo.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineInfo.stageCount          = 2;
-        pipelineInfo.pStages             = shader_stages;
-        pipelineInfo.pVertexInputState   = &vertex_input_state_create_info;
-        pipelineInfo.pInputAssemblyState = &input_assembly_create_info;
-        pipelineInfo.pViewportState      = &viewport_state_create_info;
-        pipelineInfo.pRasterizationState = &rasterization_state_create_info;
-        pipelineInfo.pMultisampleState   = &multisample_state_create_info;
-        pipelineInfo.pColorBlendState    = &color_blend_state_create_info;
-        pipelineInfo.pDepthStencilState  = &depth_stencil_create_info;
-        pipelineInfo.layout              = _render_pipelines[0].layout;
-        pipelineInfo.renderPass          = _framebuffer.render_pass;
-        pipelineInfo.subpass             = _main_camera_subpass_color_grading;
-        pipelineInfo.basePipelineHandle  = VK_NULL_HANDLE;
-        pipelineInfo.pDynamicState       = &dynamic_state_create_info;
+        VkGraphicsPipelineCreateInfo pipeline_info {};
+        pipeline_info.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipeline_info.stageCount          = 2;
+        pipeline_info.pStages             = shader_stages;
+        pipeline_info.pVertexInputState   = &vertex_input_state_create_info;
+        pipeline_info.pInputAssemblyState = &input_assembly_create_info;
+        pipeline_info.pViewportState      = &viewport_state_create_info;
+        pipeline_info.pRasterizationState = &rasterization_state_create_info;
+        pipeline_info.pMultisampleState   = &multisample_state_create_info;
+        pipeline_info.pColorBlendState    = &color_blend_state_create_info;
+        pipeline_info.pDepthStencilState  = &depth_stencil_create_info;
+        pipeline_info.layout              = _render_pipelines[0].layout;
+        pipeline_info.renderPass          = _framebuffer.render_pass;
+        pipeline_info.subpass             = _main_camera_subpass_color_grading;
+        pipeline_info.basePipelineHandle  = VK_NULL_HANDLE;
+        pipeline_info.pDynamicState       = &dynamic_state_create_info;
 
         if (vkCreateGraphicsPipelines(m_p_vulkan_context->_device,
                                       VK_NULL_HANDLE,
                                       1,
-                                      &pipelineInfo,
+                                      &pipeline_info,
                                       nullptr,
                                       &_render_pipelines[0].pipeline) != VK_SUCCESS)
         {
@@ -200,7 +200,7 @@ namespace Pilot
     {
         VkDescriptorSetAllocateInfo post_process_global_descriptor_set_alloc_info;
         post_process_global_descriptor_set_alloc_info.sType          = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        post_process_global_descriptor_set_alloc_info.pNext          = NULL;
+        post_process_global_descriptor_set_alloc_info.pNext          = nullptr;
         post_process_global_descriptor_set_alloc_info.descriptorPool = m_descriptor_pool;
         post_process_global_descriptor_set_alloc_info.descriptorSetCount = 1;
         post_process_global_descriptor_set_alloc_info.pSetLayouts        = &_descriptor_infos[0].layout;
@@ -221,19 +221,19 @@ namespace Pilot
         post_process_per_frame_input_attachment_info.imageView   = input_attachment;
         post_process_per_frame_input_attachment_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-        VkDescriptorImageInfo color_grading_LUT_image_info = {};
-        color_grading_LUT_image_info.sampler =
+        VkDescriptorImageInfo color_grading_lut_image_info = {};
+        color_grading_lut_image_info.sampler =
             PVulkanUtil::getOrCreateLinearSampler(m_p_vulkan_context->_physical_device, m_p_vulkan_context->_device);
-        color_grading_LUT_image_info.imageView =
+        color_grading_lut_image_info.imageView =
             m_p_global_render_resource->_color_grading_resource._color_grading_LUT_texture_image_view;
-        color_grading_LUT_image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        color_grading_lut_image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         VkWriteDescriptorSet post_process_descriptor_writes_info[2];
 
         VkWriteDescriptorSet& post_process_descriptor_input_attachment_write_info =
             post_process_descriptor_writes_info[0];
         post_process_descriptor_input_attachment_write_info.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        post_process_descriptor_input_attachment_write_info.pNext           = NULL;
+        post_process_descriptor_input_attachment_write_info.pNext           = nullptr;
         post_process_descriptor_input_attachment_write_info.dstSet          = _descriptor_infos[0].descriptor_set;
         post_process_descriptor_input_attachment_write_info.dstBinding      = 0;
         post_process_descriptor_input_attachment_write_info.dstArrayElement = 0;
@@ -241,22 +241,22 @@ namespace Pilot
         post_process_descriptor_input_attachment_write_info.descriptorCount = 1;
         post_process_descriptor_input_attachment_write_info.pImageInfo = &post_process_per_frame_input_attachment_info;
 
-        VkWriteDescriptorSet& post_process_descriptor_LUT_write_info = post_process_descriptor_writes_info[1];
-        post_process_descriptor_LUT_write_info.sType                 = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        post_process_descriptor_LUT_write_info.pNext                 = NULL;
-        post_process_descriptor_LUT_write_info.dstSet                = _descriptor_infos[0].descriptor_set;
-        post_process_descriptor_LUT_write_info.dstBinding            = 1;
-        post_process_descriptor_LUT_write_info.dstArrayElement       = 0;
-        post_process_descriptor_LUT_write_info.descriptorType        = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        post_process_descriptor_LUT_write_info.descriptorCount       = 1;
-        post_process_descriptor_LUT_write_info.pImageInfo            = &color_grading_LUT_image_info;
+        VkWriteDescriptorSet& post_process_descriptor_lut_write_info = post_process_descriptor_writes_info[1];
+        post_process_descriptor_lut_write_info.sType                 = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        post_process_descriptor_lut_write_info.pNext                 = nullptr;
+        post_process_descriptor_lut_write_info.dstSet                = _descriptor_infos[0].descriptor_set;
+        post_process_descriptor_lut_write_info.dstBinding            = 1;
+        post_process_descriptor_lut_write_info.dstArrayElement       = 0;
+        post_process_descriptor_lut_write_info.descriptorType        = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        post_process_descriptor_lut_write_info.descriptorCount       = 1;
+        post_process_descriptor_lut_write_info.pImageInfo            = &color_grading_lut_image_info;
 
         vkUpdateDescriptorSets(m_p_vulkan_context->_device,
                                sizeof(post_process_descriptor_writes_info) /
                                    sizeof(post_process_descriptor_writes_info[0]),
                                post_process_descriptor_writes_info,
                                0,
-                               NULL);
+                               nullptr);
     }
 
     void PColorGradingPass::draw()
@@ -264,7 +264,7 @@ namespace Pilot
         if (m_render_config._enable_debug_untils_label)
         {
             VkDebugUtilsLabelEXT label_info = {
-                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, NULL, "Color Grading", {1.0f, 1.0f, 1.0f, 1.0f}};
+                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, nullptr, "Color Grading", {1.0f, 1.0f, 1.0f, 1.0f}};
             m_p_vulkan_context->_vkCmdBeginDebugUtilsLabelEXT(m_command_info._current_command_buffer, &label_info);
         }
 
@@ -279,7 +279,7 @@ namespace Pilot
                                                      1,
                                                      &_descriptor_infos[0].descriptor_set,
                                                      0,
-                                                     NULL);
+                                                     nullptr);
 
         vkCmdDraw(m_command_info._current_command_buffer, 3, 1, 0, 0);
 

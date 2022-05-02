@@ -201,7 +201,7 @@ namespace Pilot
 
         VkDescriptorSetLayoutCreateInfo mesh_point_light_shadow_global_layout_create_info;
         mesh_point_light_shadow_global_layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        mesh_point_light_shadow_global_layout_create_info.pNext = NULL;
+        mesh_point_light_shadow_global_layout_create_info.pNext = nullptr;
         mesh_point_light_shadow_global_layout_create_info.flags = 0;
         mesh_point_light_shadow_global_layout_create_info.bindingCount =
             (sizeof(mesh_directional_light_shadow_global_layout_bindings) /
@@ -211,7 +211,7 @@ namespace Pilot
 
         if (VK_SUCCESS != vkCreateDescriptorSetLayout(m_p_vulkan_context->_device,
                                                       &mesh_point_light_shadow_global_layout_create_info,
-                                                      NULL,
+                                                      nullptr,
                                                       &_descriptor_infos[0].layout))
         {
             throw std::runtime_error("create mesh directional light shadow global layout");
@@ -331,7 +331,7 @@ namespace Pilot
         VkPipelineDynamicStateCreateInfo dynamic_state_create_info {};
         dynamic_state_create_info.sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
         dynamic_state_create_info.dynamicStateCount = 0;
-        dynamic_state_create_info.pDynamicStates    = NULL;
+        dynamic_state_create_info.pDynamicStates    = nullptr;
 
         VkGraphicsPipelineCreateInfo pipelineInfo {};
         pipelineInfo.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -367,7 +367,7 @@ namespace Pilot
         VkDescriptorSetAllocateInfo mesh_directional_light_shadow_global_descriptor_set_alloc_info;
         mesh_directional_light_shadow_global_descriptor_set_alloc_info.sType =
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        mesh_directional_light_shadow_global_descriptor_set_alloc_info.pNext              = NULL;
+        mesh_directional_light_shadow_global_descriptor_set_alloc_info.pNext              = nullptr;
         mesh_directional_light_shadow_global_descriptor_set_alloc_info.descriptorPool     = m_descriptor_pool;
         mesh_directional_light_shadow_global_descriptor_set_alloc_info.descriptorSetCount = 1;
         mesh_directional_light_shadow_global_descriptor_set_alloc_info.pSetLayouts = &_descriptor_infos[0].layout;
@@ -414,7 +414,7 @@ namespace Pilot
 
         VkWriteDescriptorSet& mesh_directional_light_shadow_perframe_storage_buffer_write_info = descriptor_writes[0];
         mesh_directional_light_shadow_perframe_storage_buffer_write_info.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        mesh_directional_light_shadow_perframe_storage_buffer_write_info.pNext = NULL;
+        mesh_directional_light_shadow_perframe_storage_buffer_write_info.pNext = nullptr;
         mesh_directional_light_shadow_perframe_storage_buffer_write_info.dstSet          = descriptor_set_to_write;
         mesh_directional_light_shadow_perframe_storage_buffer_write_info.dstBinding      = 0;
         mesh_directional_light_shadow_perframe_storage_buffer_write_info.dstArrayElement = 0;
@@ -428,7 +428,7 @@ namespace Pilot
             descriptor_writes[1];
         mesh_directional_light_shadow_perdrawcall_storage_buffer_write_info.sType =
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        mesh_directional_light_shadow_perdrawcall_storage_buffer_write_info.pNext           = NULL;
+        mesh_directional_light_shadow_perdrawcall_storage_buffer_write_info.pNext           = nullptr;
         mesh_directional_light_shadow_perdrawcall_storage_buffer_write_info.dstSet          = descriptor_set_to_write;
         mesh_directional_light_shadow_perdrawcall_storage_buffer_write_info.dstBinding      = 1;
         mesh_directional_light_shadow_perdrawcall_storage_buffer_write_info.dstArrayElement = 0;
@@ -442,7 +442,7 @@ namespace Pilot
             descriptor_writes[2];
         mesh_directional_light_shadow_per_drawcall_vertex_blending_storage_buffer_write_info.sType =
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        mesh_directional_light_shadow_per_drawcall_vertex_blending_storage_buffer_write_info.pNext = NULL;
+        mesh_directional_light_shadow_per_drawcall_vertex_blending_storage_buffer_write_info.pNext = nullptr;
         mesh_directional_light_shadow_per_drawcall_vertex_blending_storage_buffer_write_info.dstSet =
             descriptor_set_to_write;
         mesh_directional_light_shadow_per_drawcall_vertex_blending_storage_buffer_write_info.dstBinding      = 2;
@@ -457,7 +457,7 @@ namespace Pilot
                                (sizeof(descriptor_writes) / sizeof(descriptor_writes[0])),
                                descriptor_writes,
                                0,
-                               NULL);
+                               nullptr);
     }
     void PDirectionalLightShadowPass::drawModel()
     {
@@ -513,7 +513,7 @@ namespace Pilot
             if (m_render_config._enable_debug_untils_label)
             {
                 VkDebugUtilsLabelEXT label_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
-                                                   NULL,
+                                                   nullptr,
                                                    "Directional Light Shadow",
                                                    {1.0f, 1.0f, 1.0f, 1.0f}};
                 m_p_vulkan_context->_vkCmdBeginDebugUtilsLabelEXT(m_command_info._current_command_buffer, &label_info);
@@ -526,7 +526,7 @@ namespace Pilot
             if (m_render_config._enable_debug_untils_label)
             {
                 VkDebugUtilsLabelEXT label_info = {
-                    VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, NULL, "Mesh", {1.0f, 1.0f, 1.0f, 1.0f}};
+                    VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, nullptr, "Mesh", {1.0f, 1.0f, 1.0f, 1.0f}};
                 m_p_vulkan_context->_vkCmdBeginDebugUtilsLabelEXT(m_command_info._current_command_buffer, &label_info);
             }
 
@@ -572,7 +572,7 @@ namespace Pilot
                                                                      1,
                                                                      &mesh->mesh_vertex_blending_descriptor_set,
                                                                      0,
-                                                                     NULL);
+                                                                     nullptr);
 
                         VkBuffer     vertex_buffers[] = {mesh->mesh_vertex_position_buffer};
                         VkDeviceSize offsets[]        = {0};

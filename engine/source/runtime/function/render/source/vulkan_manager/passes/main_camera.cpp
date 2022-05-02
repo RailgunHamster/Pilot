@@ -181,7 +181,7 @@ namespace Pilot
         base_pass.pColorAttachments       = &base_pass_color_attachments_reference[0];
         base_pass.pDepthStencilAttachment = &base_pass_depth_attachment_reference;
         base_pass.preserveAttachmentCount = 0;
-        base_pass.pPreserveAttachments    = NULL;
+        base_pass.pPreserveAttachments    = nullptr;
 
         VkAttachmentReference deferred_lighting_pass_input_attachments_reference[4] = {};
         deferred_lighting_pass_input_attachments_reference[0].attachment =
@@ -209,9 +209,9 @@ namespace Pilot
         deferred_lighting_pass.colorAttachmentCount = sizeof(deferred_lighting_pass_color_attachment_reference) /
                                                       sizeof(deferred_lighting_pass_color_attachment_reference[0]);
         deferred_lighting_pass.pColorAttachments       = &deferred_lighting_pass_color_attachment_reference[0];
-        deferred_lighting_pass.pDepthStencilAttachment = NULL;
+        deferred_lighting_pass.pDepthStencilAttachment = nullptr;
         deferred_lighting_pass.preserveAttachmentCount = 0;
-        deferred_lighting_pass.pPreserveAttachments    = NULL;
+        deferred_lighting_pass.pPreserveAttachments    = nullptr;
 
         VkAttachmentReference forward_lighting_pass_color_attachments_reference[1] = {};
         forward_lighting_pass_color_attachments_reference[0].attachment =
@@ -225,13 +225,13 @@ namespace Pilot
         VkSubpassDescription& forward_lighting_pass = subpasses[_main_camera_subpass_forward_lighting];
         forward_lighting_pass.pipelineBindPoint     = VK_PIPELINE_BIND_POINT_GRAPHICS;
         forward_lighting_pass.inputAttachmentCount  = 0U;
-        forward_lighting_pass.pInputAttachments     = NULL;
+        forward_lighting_pass.pInputAttachments     = nullptr;
         forward_lighting_pass.colorAttachmentCount  = sizeof(forward_lighting_pass_color_attachments_reference) /
                                                      sizeof(forward_lighting_pass_color_attachments_reference[0]);
         forward_lighting_pass.pColorAttachments       = &forward_lighting_pass_color_attachments_reference[0];
         forward_lighting_pass.pDepthStencilAttachment = &forward_lighting_pass_depth_attachment_reference;
         forward_lighting_pass.preserveAttachmentCount = 0;
-        forward_lighting_pass.pPreserveAttachments    = NULL;
+        forward_lighting_pass.pPreserveAttachments    = nullptr;
 
         VkAttachmentReference tone_mapping_pass_input_attachment_reference {};
         tone_mapping_pass_input_attachment_reference.attachment =
@@ -249,9 +249,9 @@ namespace Pilot
         tone_mapping_pass.pInputAttachments       = &tone_mapping_pass_input_attachment_reference;
         tone_mapping_pass.colorAttachmentCount    = 1;
         tone_mapping_pass.pColorAttachments       = &tone_mapping_pass_color_attachment_reference;
-        tone_mapping_pass.pDepthStencilAttachment = NULL;
+        tone_mapping_pass.pDepthStencilAttachment = nullptr;
         tone_mapping_pass.preserveAttachmentCount = 0;
-        tone_mapping_pass.pPreserveAttachments    = NULL;
+        tone_mapping_pass.pPreserveAttachments    = nullptr;
 
         VkAttachmentReference color_grading_pass_input_attachment_reference {};
         color_grading_pass_input_attachment_reference.attachment =
@@ -269,9 +269,9 @@ namespace Pilot
         color_grading_pass.pInputAttachments       = &color_grading_pass_input_attachment_reference;
         color_grading_pass.colorAttachmentCount    = 1;
         color_grading_pass.pColorAttachments       = &color_grading_pass_color_attachment_reference;
-        color_grading_pass.pDepthStencilAttachment = NULL;
+        color_grading_pass.pDepthStencilAttachment = nullptr;
         color_grading_pass.preserveAttachmentCount = 0;
-        color_grading_pass.pPreserveAttachments    = NULL;
+        color_grading_pass.pPreserveAttachments    = nullptr;
 
         VkAttachmentReference ui_pass_color_attachment_reference {};
         ui_pass_color_attachment_reference.attachment = &backup_even_color_attachment_description - attachments;
@@ -282,10 +282,10 @@ namespace Pilot
         VkSubpassDescription& ui_pass   = subpasses[_main_camera_subpass_ui];
         ui_pass.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
         ui_pass.inputAttachmentCount    = 0;
-        ui_pass.pInputAttachments       = NULL;
+        ui_pass.pInputAttachments       = nullptr;
         ui_pass.colorAttachmentCount    = 1;
         ui_pass.pColorAttachments       = &ui_pass_color_attachment_reference;
-        ui_pass.pDepthStencilAttachment = NULL;
+        ui_pass.pDepthStencilAttachment = nullptr;
         ui_pass.preserveAttachmentCount = 1;
         ui_pass.pPreserveAttachments    = &ui_pass_preserve_attachment;
 
@@ -308,9 +308,9 @@ namespace Pilot
         combine_ui_pass.pInputAttachments       = combine_ui_pass_input_attachments_reference;
         combine_ui_pass.colorAttachmentCount    = 1;
         combine_ui_pass.pColorAttachments       = &combine_ui_pass_color_attachment_reference;
-        combine_ui_pass.pDepthStencilAttachment = NULL;
+        combine_ui_pass.pDepthStencilAttachment = nullptr;
         combine_ui_pass.preserveAttachmentCount = 0;
-        combine_ui_pass.pPreserveAttachments    = NULL;
+        combine_ui_pass.pPreserveAttachments    = nullptr;
 
         VkSubpassDependency dependencies[7] = {};
 
@@ -429,7 +429,7 @@ namespace Pilot
             mesh_mesh_layout_uniform_buffer_binding.descriptorType                = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             mesh_mesh_layout_uniform_buffer_binding.descriptorCount               = 1;
             mesh_mesh_layout_uniform_buffer_binding.stageFlags                    = VK_SHADER_STAGE_VERTEX_BIT;
-            mesh_mesh_layout_uniform_buffer_binding.pImmutableSamplers            = NULL;
+            mesh_mesh_layout_uniform_buffer_binding.pImmutableSamplers            = nullptr;
 
             VkDescriptorSetLayoutCreateInfo mesh_mesh_layout_create_info {};
             mesh_mesh_layout_create_info.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -438,7 +438,7 @@ namespace Pilot
 
             if (vkCreateDescriptorSetLayout(m_p_vulkan_context->_device,
                                             &mesh_mesh_layout_create_info,
-                                            NULL,
+                                            nullptr,
                                             &_descriptor_infos[_per_mesh].layout) != VK_SUCCESS)
             {
                 throw std::runtime_error("create mesh mesh layout");
@@ -456,7 +456,7 @@ namespace Pilot
             mesh_global_layout_perframe_storage_buffer_binding.descriptorCount = 1;
             mesh_global_layout_perframe_storage_buffer_binding.stageFlags =
                 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-            mesh_global_layout_perframe_storage_buffer_binding.pImmutableSamplers = NULL;
+            mesh_global_layout_perframe_storage_buffer_binding.pImmutableSamplers = nullptr;
 
             VkDescriptorSetLayoutBinding& mesh_global_layout_perdrawcall_storage_buffer_binding =
                 mesh_global_layout_bindings[1];
@@ -465,7 +465,7 @@ namespace Pilot
                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
             mesh_global_layout_perdrawcall_storage_buffer_binding.descriptorCount    = 1;
             mesh_global_layout_perdrawcall_storage_buffer_binding.stageFlags         = VK_SHADER_STAGE_VERTEX_BIT;
-            mesh_global_layout_perdrawcall_storage_buffer_binding.pImmutableSamplers = NULL;
+            mesh_global_layout_perdrawcall_storage_buffer_binding.pImmutableSamplers = nullptr;
 
             VkDescriptorSetLayoutBinding& mesh_global_layout_per_drawcall_vertex_blending_storage_buffer_binding =
                 mesh_global_layout_bindings[2];
@@ -475,14 +475,14 @@ namespace Pilot
             mesh_global_layout_per_drawcall_vertex_blending_storage_buffer_binding.descriptorCount = 1;
             mesh_global_layout_per_drawcall_vertex_blending_storage_buffer_binding.stageFlags =
                 VK_SHADER_STAGE_VERTEX_BIT;
-            mesh_global_layout_per_drawcall_vertex_blending_storage_buffer_binding.pImmutableSamplers = NULL;
+            mesh_global_layout_per_drawcall_vertex_blending_storage_buffer_binding.pImmutableSamplers = nullptr;
 
             VkDescriptorSetLayoutBinding& mesh_global_layout_brdfLUT_texture_binding = mesh_global_layout_bindings[3];
             mesh_global_layout_brdfLUT_texture_binding.binding                       = 3;
             mesh_global_layout_brdfLUT_texture_binding.descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             mesh_global_layout_brdfLUT_texture_binding.descriptorCount    = 1;
             mesh_global_layout_brdfLUT_texture_binding.stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT;
-            mesh_global_layout_brdfLUT_texture_binding.pImmutableSamplers = NULL;
+            mesh_global_layout_brdfLUT_texture_binding.pImmutableSamplers = nullptr;
 
             VkDescriptorSetLayoutBinding& mesh_global_layout_irradiance_texture_binding =
                 mesh_global_layout_bindings[4];
@@ -505,7 +505,7 @@ namespace Pilot
 
             VkDescriptorSetLayoutCreateInfo mesh_global_layout_create_info;
             mesh_global_layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            mesh_global_layout_create_info.pNext = NULL;
+            mesh_global_layout_create_info.pNext = nullptr;
             mesh_global_layout_create_info.flags = 0;
             mesh_global_layout_create_info.bindingCount =
                 (sizeof(mesh_global_layout_bindings) / sizeof(mesh_global_layout_bindings[0]));
@@ -513,7 +513,7 @@ namespace Pilot
 
             if (VK_SUCCESS != vkCreateDescriptorSetLayout(m_p_vulkan_context->_device,
                                                           &mesh_global_layout_create_info,
-                                                          NULL,
+                                                          nullptr,
                                                           &_descriptor_infos[_mesh_global].layout))
             {
                 throw std::runtime_error("create mesh global layout");
@@ -567,7 +567,7 @@ namespace Pilot
 
             VkDescriptorSetLayoutCreateInfo mesh_material_layout_create_info;
             mesh_material_layout_create_info.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            mesh_material_layout_create_info.pNext        = NULL;
+            mesh_material_layout_create_info.pNext        = nullptr;
             mesh_material_layout_create_info.flags        = 0;
             mesh_material_layout_create_info.bindingCount = 6;
             mesh_material_layout_create_info.pBindings    = mesh_material_layout_bindings;
@@ -590,23 +590,24 @@ namespace Pilot
             skybox_layout_perframe_storage_buffer_binding.descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
             skybox_layout_perframe_storage_buffer_binding.descriptorCount = 1;
             skybox_layout_perframe_storage_buffer_binding.stageFlags      = VK_SHADER_STAGE_VERTEX_BIT;
-            skybox_layout_perframe_storage_buffer_binding.pImmutableSamplers = NULL;
+            skybox_layout_perframe_storage_buffer_binding.pImmutableSamplers = nullptr;
 
             VkDescriptorSetLayoutBinding& skybox_layout_specular_texture_binding = skybox_layout_bindings[1];
             skybox_layout_specular_texture_binding.binding                       = 1;
             skybox_layout_specular_texture_binding.descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             skybox_layout_specular_texture_binding.descriptorCount    = 1;
             skybox_layout_specular_texture_binding.stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT;
-            skybox_layout_specular_texture_binding.pImmutableSamplers = NULL;
+            skybox_layout_specular_texture_binding.pImmutableSamplers = nullptr;
 
             VkDescriptorSetLayoutCreateInfo skybox_layout_create_info {};
             skybox_layout_create_info.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
             skybox_layout_create_info.bindingCount = 2;
             skybox_layout_create_info.pBindings    = skybox_layout_bindings;
 
-            if (VK_SUCCESS !=
-                vkCreateDescriptorSetLayout(
-                    m_p_vulkan_context->_device, &skybox_layout_create_info, NULL, &_descriptor_infos[_skybox].layout))
+            if (VK_SUCCESS != vkCreateDescriptorSetLayout(m_p_vulkan_context->_device,
+                                                          &skybox_layout_create_info,
+                                                          nullptr,
+                                                          &_descriptor_infos[_skybox].layout))
             {
                 throw std::runtime_error("create skybox layout");
             }
@@ -620,14 +621,14 @@ namespace Pilot
             axis_layout_perframe_storage_buffer_binding.descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
             axis_layout_perframe_storage_buffer_binding.descriptorCount    = 1;
             axis_layout_perframe_storage_buffer_binding.stageFlags         = VK_SHADER_STAGE_VERTEX_BIT;
-            axis_layout_perframe_storage_buffer_binding.pImmutableSamplers = NULL;
+            axis_layout_perframe_storage_buffer_binding.pImmutableSamplers = nullptr;
 
             VkDescriptorSetLayoutBinding& axis_layout_storage_buffer_binding = axis_layout_bindings[1];
             axis_layout_storage_buffer_binding.binding                       = 1;
             axis_layout_storage_buffer_binding.descriptorType                = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             axis_layout_storage_buffer_binding.descriptorCount               = 1;
             axis_layout_storage_buffer_binding.stageFlags                    = VK_SHADER_STAGE_VERTEX_BIT;
-            axis_layout_storage_buffer_binding.pImmutableSamplers            = NULL;
+            axis_layout_storage_buffer_binding.pImmutableSamplers            = nullptr;
 
             VkDescriptorSetLayoutCreateInfo axis_layout_create_info {};
             axis_layout_create_info.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -636,7 +637,7 @@ namespace Pilot
 
             if (VK_SUCCESS !=
                 vkCreateDescriptorSetLayout(
-                    m_p_vulkan_context->_device, &axis_layout_create_info, NULL, &_descriptor_infos[_axis].layout))
+                    m_p_vulkan_context->_device, &axis_layout_create_info, nullptr, &_descriptor_infos[_axis].layout))
             {
                 throw std::runtime_error("create axis layout");
             }
@@ -652,7 +653,7 @@ namespace Pilot
                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
             particlebillboard_global_layout_perframe_storage_buffer_binding.descriptorCount = 1;
             particlebillboard_global_layout_perframe_storage_buffer_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-            particlebillboard_global_layout_perframe_storage_buffer_binding.pImmutableSamplers = NULL;
+            particlebillboard_global_layout_perframe_storage_buffer_binding.pImmutableSamplers = nullptr;
 
             VkDescriptorSetLayoutBinding& particlebillboard_global_layout_perdrawcall_storage_buffer_binding =
                 particlebillboard_global_layout_bindings[1];
@@ -661,18 +662,18 @@ namespace Pilot
                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
             particlebillboard_global_layout_perdrawcall_storage_buffer_binding.descriptorCount = 1;
             particlebillboard_global_layout_perdrawcall_storage_buffer_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-            particlebillboard_global_layout_perdrawcall_storage_buffer_binding.pImmutableSamplers = NULL;
+            particlebillboard_global_layout_perdrawcall_storage_buffer_binding.pImmutableSamplers = nullptr;
 
             VkDescriptorSetLayoutCreateInfo particlebillboard_global_layout_create_info;
             particlebillboard_global_layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            particlebillboard_global_layout_create_info.pNext = NULL;
+            particlebillboard_global_layout_create_info.pNext = nullptr;
             particlebillboard_global_layout_create_info.flags = 0;
             particlebillboard_global_layout_create_info.bindingCount = 2;
             particlebillboard_global_layout_create_info.pBindings    = particlebillboard_global_layout_bindings;
 
             if (VK_SUCCESS != vkCreateDescriptorSetLayout(m_p_vulkan_context->_device,
                                                           &particlebillboard_global_layout_create_info,
-                                                          NULL,
+                                                          nullptr,
                                                           &_descriptor_infos[_particle].layout))
             {
                 throw std::runtime_error("create particle billboard global layout");
@@ -715,7 +716,7 @@ namespace Pilot
 
             VkDescriptorSetLayoutCreateInfo gbuffer_lighting_global_layout_create_info;
             gbuffer_lighting_global_layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            gbuffer_lighting_global_layout_create_info.pNext = NULL;
+            gbuffer_lighting_global_layout_create_info.pNext = nullptr;
             gbuffer_lighting_global_layout_create_info.flags = 0;
             gbuffer_lighting_global_layout_create_info.bindingCount =
                 sizeof(gbuffer_lighting_global_layout_bindings) / sizeof(gbuffer_lighting_global_layout_bindings[0]);
@@ -723,7 +724,7 @@ namespace Pilot
 
             if (VK_SUCCESS != vkCreateDescriptorSetLayout(m_p_vulkan_context->_device,
                                                           &gbuffer_lighting_global_layout_create_info,
-                                                          NULL,
+                                                          nullptr,
                                                           &_descriptor_infos[_deferred_lighting].layout))
             {
                 throw std::runtime_error("create deferred lighting global layout");
@@ -738,8 +739,8 @@ namespace Pilot
         // mesh gbuffer
         {
             VkDescriptorSetLayout      descriptorset_layouts[3] = {_descriptor_infos[_mesh_global].layout,
-                                                              _descriptor_infos[_per_mesh].layout,
-                                                              _descriptor_infos[_mesh_per_material].layout};
+                                                                   _descriptor_infos[_per_mesh].layout,
+                                                                   _descriptor_infos[_mesh_per_material].layout};
             VkPipelineLayoutCreateInfo pipeline_layout_create_info {};
             pipeline_layout_create_info.sType          = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
             pipeline_layout_create_info.setLayoutCount = 3;
@@ -901,8 +902,8 @@ namespace Pilot
         // deferred lighting
         {
             VkDescriptorSetLayout      descriptorset_layouts[3] = {_descriptor_infos[_mesh_global].layout,
-                                                              _descriptor_infos[_deferred_lighting].layout,
-                                                              _descriptor_infos[_skybox].layout};
+                                                                   _descriptor_infos[_deferred_lighting].layout,
+                                                                   _descriptor_infos[_skybox].layout};
             VkPipelineLayoutCreateInfo pipeline_layout_create_info {};
             pipeline_layout_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
             pipeline_layout_create_info.setLayoutCount =
@@ -944,9 +945,9 @@ namespace Pilot
             VkPipelineVertexInputStateCreateInfo vertex_input_state_create_info {};
             vertex_input_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
             vertex_input_state_create_info.vertexBindingDescriptionCount = 0;
-            vertex_input_state_create_info.pVertexBindingDescriptions    = NULL;
+            vertex_input_state_create_info.pVertexBindingDescriptions    = nullptr;
             vertex_input_state_create_info.vertexBindingDescriptionCount = 0;
-            vertex_input_state_create_info.pVertexAttributeDescriptions  = NULL;
+            vertex_input_state_create_info.pVertexAttributeDescriptions  = nullptr;
 
             VkPipelineInputAssemblyStateCreateInfo input_assembly_create_info {};
             input_assembly_create_info.sType    = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -1050,8 +1051,8 @@ namespace Pilot
         // mesh lighting
         {
             VkDescriptorSetLayout      descriptorset_layouts[3] = {_descriptor_infos[_mesh_global].layout,
-                                                              _descriptor_infos[_per_mesh].layout,
-                                                              _descriptor_infos[_mesh_per_material].layout};
+                                                                   _descriptor_infos[_per_mesh].layout,
+                                                                   _descriptor_infos[_mesh_per_material].layout};
             VkPipelineLayoutCreateInfo pipeline_layout_create_info {};
             pipeline_layout_create_info.sType          = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
             pipeline_layout_create_info.setLayoutCount = 3;
@@ -1233,9 +1234,9 @@ namespace Pilot
             VkPipelineVertexInputStateCreateInfo vertex_input_state_create_info {};
             vertex_input_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
             vertex_input_state_create_info.vertexBindingDescriptionCount   = 0;
-            vertex_input_state_create_info.pVertexBindingDescriptions      = NULL;
+            vertex_input_state_create_info.pVertexBindingDescriptions      = nullptr;
             vertex_input_state_create_info.vertexAttributeDescriptionCount = 0;
-            vertex_input_state_create_info.pVertexAttributeDescriptions    = NULL;
+            vertex_input_state_create_info.pVertexAttributeDescriptions    = nullptr;
 
             VkPipelineInputAssemblyStateCreateInfo input_assembly_create_info {};
             input_assembly_create_info.sType    = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -1374,9 +1375,9 @@ namespace Pilot
             VkPipelineVertexInputStateCreateInfo vertex_input_state_create_info {};
             vertex_input_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
             vertex_input_state_create_info.vertexBindingDescriptionCount   = 0;
-            vertex_input_state_create_info.pVertexBindingDescriptions      = NULL;
+            vertex_input_state_create_info.pVertexBindingDescriptions      = nullptr;
             vertex_input_state_create_info.vertexAttributeDescriptionCount = 0;
-            vertex_input_state_create_info.pVertexAttributeDescriptions    = NULL;
+            vertex_input_state_create_info.pVertexAttributeDescriptions    = nullptr;
 
             VkPipelineInputAssemblyStateCreateInfo input_assembly_create_info {};
             input_assembly_create_info.sType    = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -1633,7 +1634,7 @@ namespace Pilot
         // update common model's global descriptor set
         VkDescriptorSetAllocateInfo mesh_global_descriptor_set_alloc_info;
         mesh_global_descriptor_set_alloc_info.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        mesh_global_descriptor_set_alloc_info.pNext              = NULL;
+        mesh_global_descriptor_set_alloc_info.pNext              = nullptr;
         mesh_global_descriptor_set_alloc_info.descriptorPool     = m_descriptor_pool;
         mesh_global_descriptor_set_alloc_info.descriptorSetCount = 1;
         mesh_global_descriptor_set_alloc_info.pSetLayouts        = &_descriptor_infos[_mesh_global].layout;
@@ -1703,7 +1704,7 @@ namespace Pilot
         VkWriteDescriptorSet mesh_descriptor_writes_info[8];
 
         mesh_descriptor_writes_info[0].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        mesh_descriptor_writes_info[0].pNext           = NULL;
+        mesh_descriptor_writes_info[0].pNext           = nullptr;
         mesh_descriptor_writes_info[0].dstSet          = _descriptor_infos[_mesh_global].descriptor_set;
         mesh_descriptor_writes_info[0].dstBinding      = 0;
         mesh_descriptor_writes_info[0].dstArrayElement = 0;
@@ -1712,7 +1713,7 @@ namespace Pilot
         mesh_descriptor_writes_info[0].pBufferInfo     = &mesh_perframe_storage_buffer_info;
 
         mesh_descriptor_writes_info[1].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        mesh_descriptor_writes_info[1].pNext           = NULL;
+        mesh_descriptor_writes_info[1].pNext           = nullptr;
         mesh_descriptor_writes_info[1].dstSet          = _descriptor_infos[_mesh_global].descriptor_set;
         mesh_descriptor_writes_info[1].dstBinding      = 1;
         mesh_descriptor_writes_info[1].dstArrayElement = 0;
@@ -1721,7 +1722,7 @@ namespace Pilot
         mesh_descriptor_writes_info[1].pBufferInfo     = &mesh_perdrawcall_storage_buffer_info;
 
         mesh_descriptor_writes_info[2].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        mesh_descriptor_writes_info[2].pNext           = NULL;
+        mesh_descriptor_writes_info[2].pNext           = nullptr;
         mesh_descriptor_writes_info[2].dstSet          = _descriptor_infos[_mesh_global].descriptor_set;
         mesh_descriptor_writes_info[2].dstBinding      = 2;
         mesh_descriptor_writes_info[2].dstArrayElement = 0;
@@ -1730,7 +1731,7 @@ namespace Pilot
         mesh_descriptor_writes_info[2].pBufferInfo     = &mesh_per_drawcall_vertex_blending_storage_buffer_info;
 
         mesh_descriptor_writes_info[3].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        mesh_descriptor_writes_info[3].pNext           = NULL;
+        mesh_descriptor_writes_info[3].pNext           = nullptr;
         mesh_descriptor_writes_info[3].dstSet          = _descriptor_infos[_mesh_global].descriptor_set;
         mesh_descriptor_writes_info[3].dstBinding      = 3;
         mesh_descriptor_writes_info[3].dstArrayElement = 0;
@@ -1758,14 +1759,14 @@ namespace Pilot
                                sizeof(mesh_descriptor_writes_info) / sizeof(mesh_descriptor_writes_info[0]),
                                mesh_descriptor_writes_info,
                                0,
-                               NULL);
+                               nullptr);
     }
 
     void PMainCameraPass::setupSkyboxDescriptorSet()
     {
         VkDescriptorSetAllocateInfo skybox_descriptor_set_alloc_info;
         skybox_descriptor_set_alloc_info.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        skybox_descriptor_set_alloc_info.pNext              = NULL;
+        skybox_descriptor_set_alloc_info.pNext              = nullptr;
         skybox_descriptor_set_alloc_info.descriptorPool     = m_descriptor_pool;
         skybox_descriptor_set_alloc_info.descriptorSetCount = 1;
         skybox_descriptor_set_alloc_info.pSetLayouts        = &_descriptor_infos[_skybox].layout;
@@ -1793,7 +1794,7 @@ namespace Pilot
         VkWriteDescriptorSet skybox_descriptor_writes_info[2];
 
         skybox_descriptor_writes_info[0].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        skybox_descriptor_writes_info[0].pNext           = NULL;
+        skybox_descriptor_writes_info[0].pNext           = nullptr;
         skybox_descriptor_writes_info[0].dstSet          = _descriptor_infos[_skybox].descriptor_set;
         skybox_descriptor_writes_info[0].dstBinding      = 0;
         skybox_descriptor_writes_info[0].dstArrayElement = 0;
@@ -1802,7 +1803,7 @@ namespace Pilot
         skybox_descriptor_writes_info[0].pBufferInfo     = &mesh_perframe_storage_buffer_info;
 
         skybox_descriptor_writes_info[1].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        skybox_descriptor_writes_info[1].pNext           = NULL;
+        skybox_descriptor_writes_info[1].pNext           = nullptr;
         skybox_descriptor_writes_info[1].dstSet          = _descriptor_infos[_skybox].descriptor_set;
         skybox_descriptor_writes_info[1].dstBinding      = 1;
         skybox_descriptor_writes_info[1].dstArrayElement = 0;
@@ -1810,14 +1811,14 @@ namespace Pilot
         skybox_descriptor_writes_info[1].descriptorCount = 1;
         skybox_descriptor_writes_info[1].pImageInfo      = &specular_texture_image_info;
 
-        vkUpdateDescriptorSets(m_p_vulkan_context->_device, 2, skybox_descriptor_writes_info, 0, NULL);
+        vkUpdateDescriptorSets(m_p_vulkan_context->_device, 2, skybox_descriptor_writes_info, 0, nullptr);
     }
 
     void PMainCameraPass::setupAxisDescriptorSet()
     {
         VkDescriptorSetAllocateInfo axis_descriptor_set_alloc_info;
         axis_descriptor_set_alloc_info.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        axis_descriptor_set_alloc_info.pNext              = NULL;
+        axis_descriptor_set_alloc_info.pNext              = nullptr;
         axis_descriptor_set_alloc_info.descriptorPool     = m_descriptor_pool;
         axis_descriptor_set_alloc_info.descriptorSetCount = 1;
         axis_descriptor_set_alloc_info.pSetLayouts        = &_descriptor_infos[_axis].layout;
@@ -1845,7 +1846,7 @@ namespace Pilot
         VkWriteDescriptorSet axis_descriptor_writes_info[2];
 
         axis_descriptor_writes_info[0].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        axis_descriptor_writes_info[0].pNext           = NULL;
+        axis_descriptor_writes_info[0].pNext           = nullptr;
         axis_descriptor_writes_info[0].dstSet          = _descriptor_infos[_axis].descriptor_set;
         axis_descriptor_writes_info[0].dstBinding      = 0;
         axis_descriptor_writes_info[0].dstArrayElement = 0;
@@ -1854,7 +1855,7 @@ namespace Pilot
         axis_descriptor_writes_info[0].pBufferInfo     = &mesh_perframe_storage_buffer_info;
 
         axis_descriptor_writes_info[1].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        axis_descriptor_writes_info[1].pNext           = NULL;
+        axis_descriptor_writes_info[1].pNext           = nullptr;
         axis_descriptor_writes_info[1].dstSet          = _descriptor_infos[_axis].descriptor_set;
         axis_descriptor_writes_info[1].dstBinding      = 1;
         axis_descriptor_writes_info[1].dstArrayElement = 0;
@@ -1866,14 +1867,14 @@ namespace Pilot
                                (uint32_t)(sizeof(axis_descriptor_writes_info) / sizeof(axis_descriptor_writes_info[0])),
                                axis_descriptor_writes_info,
                                0,
-                               NULL);
+                               nullptr);
     }
 
     void PMainCameraPass::setupParticleDescriptorSet()
     {
         VkDescriptorSetAllocateInfo particlebillboard_global_descriptor_set_alloc_info;
         particlebillboard_global_descriptor_set_alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        particlebillboard_global_descriptor_set_alloc_info.pNext = NULL;
+        particlebillboard_global_descriptor_set_alloc_info.pNext = nullptr;
         particlebillboard_global_descriptor_set_alloc_info.descriptorPool     = m_descriptor_pool;
         particlebillboard_global_descriptor_set_alloc_info.descriptorSetCount = 1;
         particlebillboard_global_descriptor_set_alloc_info.pSetLayouts        = &_descriptor_infos[_particle].layout;
@@ -1903,7 +1904,7 @@ namespace Pilot
         VkWriteDescriptorSet particlebillboard_descriptor_writes_info[2];
 
         particlebillboard_descriptor_writes_info[0].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        particlebillboard_descriptor_writes_info[0].pNext           = NULL;
+        particlebillboard_descriptor_writes_info[0].pNext           = nullptr;
         particlebillboard_descriptor_writes_info[0].dstSet          = _descriptor_infos[_particle].descriptor_set;
         particlebillboard_descriptor_writes_info[0].dstBinding      = 0;
         particlebillboard_descriptor_writes_info[0].dstArrayElement = 0;
@@ -1912,7 +1913,7 @@ namespace Pilot
         particlebillboard_descriptor_writes_info[0].pBufferInfo     = &particlebillboard_perframe_storage_buffer_info;
 
         particlebillboard_descriptor_writes_info[1].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        particlebillboard_descriptor_writes_info[1].pNext           = NULL;
+        particlebillboard_descriptor_writes_info[1].pNext           = nullptr;
         particlebillboard_descriptor_writes_info[1].dstSet          = _descriptor_infos[_particle].descriptor_set;
         particlebillboard_descriptor_writes_info[1].dstBinding      = 1;
         particlebillboard_descriptor_writes_info[1].dstArrayElement = 0;
@@ -1920,14 +1921,14 @@ namespace Pilot
         particlebillboard_descriptor_writes_info[1].descriptorCount = 1;
         particlebillboard_descriptor_writes_info[1].pBufferInfo = &particlebillboard_perdrawcall_storage_buffer_info;
 
-        vkUpdateDescriptorSets(m_p_vulkan_context->_device, 2, particlebillboard_descriptor_writes_info, 0, NULL);
+        vkUpdateDescriptorSets(m_p_vulkan_context->_device, 2, particlebillboard_descriptor_writes_info, 0, nullptr);
     }
 
     void PMainCameraPass::setupGbufferLightingDescriptorSet()
     {
         VkDescriptorSetAllocateInfo gbuffer_light_global_descriptor_set_alloc_info;
         gbuffer_light_global_descriptor_set_alloc_info.sType          = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        gbuffer_light_global_descriptor_set_alloc_info.pNext          = NULL;
+        gbuffer_light_global_descriptor_set_alloc_info.pNext          = nullptr;
         gbuffer_light_global_descriptor_set_alloc_info.descriptorPool = m_descriptor_pool;
         gbuffer_light_global_descriptor_set_alloc_info.descriptorSetCount = 1;
         gbuffer_light_global_descriptor_set_alloc_info.pSetLayouts = &_descriptor_infos[_deferred_lighting].layout;
@@ -1973,7 +1974,7 @@ namespace Pilot
         VkWriteDescriptorSet& gbuffer_normal_descriptor_input_attachment_write_info =
             deferred_lighting_descriptor_writes_info[0];
         gbuffer_normal_descriptor_input_attachment_write_info.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        gbuffer_normal_descriptor_input_attachment_write_info.pNext = NULL;
+        gbuffer_normal_descriptor_input_attachment_write_info.pNext = nullptr;
         gbuffer_normal_descriptor_input_attachment_write_info.dstSet =
             _descriptor_infos[_deferred_lighting].descriptor_set;
         gbuffer_normal_descriptor_input_attachment_write_info.dstBinding      = 0;
@@ -1986,7 +1987,7 @@ namespace Pilot
             deferred_lighting_descriptor_writes_info[1];
         gbuffer_metallic_roughness_shadingmodeid_descriptor_input_attachment_write_info.sType =
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        gbuffer_metallic_roughness_shadingmodeid_descriptor_input_attachment_write_info.pNext = NULL;
+        gbuffer_metallic_roughness_shadingmodeid_descriptor_input_attachment_write_info.pNext = nullptr;
         gbuffer_metallic_roughness_shadingmodeid_descriptor_input_attachment_write_info.dstSet =
             _descriptor_infos[_deferred_lighting].descriptor_set;
         gbuffer_metallic_roughness_shadingmodeid_descriptor_input_attachment_write_info.dstBinding      = 1;
@@ -2000,7 +2001,7 @@ namespace Pilot
         VkWriteDescriptorSet& gbuffer_albedo_descriptor_input_attachment_write_info =
             deferred_lighting_descriptor_writes_info[2];
         gbuffer_albedo_descriptor_input_attachment_write_info.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        gbuffer_albedo_descriptor_input_attachment_write_info.pNext = NULL;
+        gbuffer_albedo_descriptor_input_attachment_write_info.pNext = nullptr;
         gbuffer_albedo_descriptor_input_attachment_write_info.dstSet =
             _descriptor_infos[_deferred_lighting].descriptor_set;
         gbuffer_albedo_descriptor_input_attachment_write_info.dstBinding      = 2;
@@ -2012,7 +2013,7 @@ namespace Pilot
         VkWriteDescriptorSet& depth_descriptor_input_attachment_write_info =
             deferred_lighting_descriptor_writes_info[3];
         depth_descriptor_input_attachment_write_info.sType      = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        depth_descriptor_input_attachment_write_info.pNext      = NULL;
+        depth_descriptor_input_attachment_write_info.pNext      = nullptr;
         depth_descriptor_input_attachment_write_info.dstSet     = _descriptor_infos[_deferred_lighting].descriptor_set;
         depth_descriptor_input_attachment_write_info.dstBinding = 3;
         depth_descriptor_input_attachment_write_info.dstArrayElement = 0;
@@ -2025,7 +2026,7 @@ namespace Pilot
                                    sizeof(deferred_lighting_descriptor_writes_info[0]),
                                deferred_lighting_descriptor_writes_info,
                                0,
-                               NULL);
+                               nullptr);
     }
 
     void PMainCameraPass::setupSwapchainFramebuffers()
@@ -2075,7 +2076,7 @@ namespace Pilot
 
         for (auto framebuffer : m_swapchain_framebuffers)
         {
-            vkDestroyFramebuffer(m_p_vulkan_context->_device, framebuffer, NULL);
+            vkDestroyFramebuffer(m_p_vulkan_context->_device, framebuffer, nullptr);
         }
 
         setupAttachments();
@@ -2118,7 +2119,7 @@ namespace Pilot
         if (m_render_config._enable_debug_untils_label)
         {
             VkDebugUtilsLabelEXT label_info = {
-                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, NULL, "BasePass", {1.0f, 1.0f, 1.0f, 1.0f}};
+                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, nullptr, "BasePass", {1.0f, 1.0f, 1.0f, 1.0f}};
             m_p_vulkan_context->_vkCmdBeginDebugUtilsLabelEXT(m_command_info._current_command_buffer, &label_info);
         }
 
@@ -2134,7 +2135,7 @@ namespace Pilot
         if (m_render_config._enable_debug_untils_label)
         {
             VkDebugUtilsLabelEXT label_info = {
-                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, NULL, "Deferred Lighting", {1.0f, 1.0f, 1.0f, 1.0f}};
+                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, nullptr, "Deferred Lighting", {1.0f, 1.0f, 1.0f, 1.0f}};
             m_p_vulkan_context->_vkCmdBeginDebugUtilsLabelEXT(m_command_info._current_command_buffer, &label_info);
         }
 
@@ -2150,7 +2151,7 @@ namespace Pilot
         if (m_render_config._enable_debug_untils_label)
         {
             VkDebugUtilsLabelEXT label_info = {
-                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, NULL, "Forward Lighting", {1.0f, 1.0f, 1.0f, 1.0f}};
+                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, nullptr, "Forward Lighting", {1.0f, 1.0f, 1.0f, 1.0f}};
             m_p_vulkan_context->_vkCmdBeginDebugUtilsLabelEXT(m_command_info._current_command_buffer, &label_info);
         }
 
@@ -2239,7 +2240,7 @@ namespace Pilot
         if (m_render_config._enable_debug_untils_label)
         {
             VkDebugUtilsLabelEXT label_info = {
-                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, NULL, "Forward Lighting", {1.0f, 1.0f, 1.0f, 1.0f}};
+                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, nullptr, "Forward Lighting", {1.0f, 1.0f, 1.0f, 1.0f}};
             m_p_vulkan_context->_vkCmdBeginDebugUtilsLabelEXT(m_command_info._current_command_buffer, &label_info);
         }
 
@@ -2327,7 +2328,7 @@ namespace Pilot
         if (m_render_config._enable_debug_untils_label)
         {
             VkDebugUtilsLabelEXT label_info = {
-                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, NULL, "Mesh GBuffer", {1.0f, 1.0f, 1.0f, 1.0f}};
+                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, nullptr, "Mesh GBuffer", {1.0f, 1.0f, 1.0f, 1.0f}};
             m_p_vulkan_context->_vkCmdBeginDebugUtilsLabelEXT(m_command_info._current_command_buffer, &label_info);
         }
 
@@ -2371,7 +2372,7 @@ namespace Pilot
                                                          1,
                                                          &material.material_descriptor_set,
                                                          0,
-                                                         NULL);
+                                                         nullptr);
 
             // TODO: render from near to far
 
@@ -2392,11 +2393,11 @@ namespace Pilot
                         1,
                         &mesh.mesh_vertex_blending_descriptor_set,
                         0,
-                        NULL);
+                        nullptr);
 
                     VkBuffer     vertex_buffers[] = {mesh.mesh_vertex_position_buffer,
-                                                 mesh.mesh_vertex_varying_enable_blending_buffer,
-                                                 mesh.mesh_vertex_varying_buffer};
+                                                     mesh.mesh_vertex_varying_enable_blending_buffer,
+                                                     mesh.mesh_vertex_varying_buffer};
                     VkDeviceSize offsets[]        = {0, 0, 0};
                     m_p_vulkan_context->_vkCmdBindVertexBuffers(m_command_info._current_command_buffer,
                                                                 0,
@@ -2613,7 +2614,7 @@ namespace Pilot
         if (m_render_config._enable_debug_untils_label)
         {
             VkDebugUtilsLabelEXT label_info = {
-                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, NULL, "Model", {1.0f, 1.0f, 1.0f, 1.0f}};
+                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, nullptr, "Model", {1.0f, 1.0f, 1.0f, 1.0f}};
             m_p_vulkan_context->_vkCmdBeginDebugUtilsLabelEXT(m_command_info._current_command_buffer, &label_info);
         }
 
@@ -2657,7 +2658,7 @@ namespace Pilot
                                                          1,
                                                          &material.material_descriptor_set,
                                                          0,
-                                                         NULL);
+                                                         nullptr);
 
             // TODO: render from near to far
 
@@ -2678,11 +2679,11 @@ namespace Pilot
                         1,
                         &mesh.mesh_vertex_blending_descriptor_set,
                         0,
-                        NULL);
+                        nullptr);
 
                     VkBuffer     vertex_buffers[] = {mesh.mesh_vertex_position_buffer,
-                                                 mesh.mesh_vertex_varying_enable_blending_buffer,
-                                                 mesh.mesh_vertex_varying_buffer};
+                                                     mesh.mesh_vertex_varying_enable_blending_buffer,
+                                                     mesh.mesh_vertex_varying_buffer};
                     VkDeviceSize offsets[]        = {0, 0, 0};
                     m_p_vulkan_context->_vkCmdBindVertexBuffers(m_command_info._current_command_buffer,
                                                                 0,
@@ -2845,7 +2846,7 @@ namespace Pilot
         if (m_render_config._enable_debug_untils_label)
         {
             VkDebugUtilsLabelEXT label_info = {
-                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, NULL, "Skybox", {1.0f, 1.0f, 1.0f, 1.0f}};
+                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, nullptr, "Skybox", {1.0f, 1.0f, 1.0f, 1.0f}};
             m_p_vulkan_context->_vkCmdBeginDebugUtilsLabelEXT(m_command_info._current_command_buffer, &label_info);
         }
 
@@ -2874,7 +2875,7 @@ namespace Pilot
         if (m_render_config._enable_debug_untils_label)
         {
             VkDebugUtilsLabelEXT label_info = {
-                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, NULL, "ParticleBillboard", {1.0f, 1.0f, 1.0f, 1.0f}};
+                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, nullptr, "ParticleBillboard", {1.0f, 1.0f, 1.0f, 1.0f}};
             m_p_vulkan_context->_vkCmdBeginDebugUtilsLabelEXT(m_command_info._current_command_buffer, &label_info);
         }
 
@@ -3001,7 +3002,7 @@ namespace Pilot
         if (m_render_config._enable_debug_untils_label)
         {
             VkDebugUtilsLabelEXT label_info = {
-                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, NULL, "Axis", {1.0f, 1.0f, 1.0f, 1.0f}};
+                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, nullptr, "Axis", {1.0f, 1.0f, 1.0f, 1.0f}};
             m_p_vulkan_context->_vkCmdBeginDebugUtilsLabelEXT(m_command_info._current_command_buffer, &label_info);
         }
 
@@ -3021,8 +3022,8 @@ namespace Pilot
         m_axis_storage_buffer_object.model_matrix  = m_visiable_nodes.p_axis_node->model_matrix;
 
         VkBuffer     vertex_buffers[] = {m_visiable_nodes.p_axis_node->ref_mesh->mesh_vertex_position_buffer,
-                                     m_visiable_nodes.p_axis_node->ref_mesh->mesh_vertex_varying_enable_blending_buffer,
-                                     m_visiable_nodes.p_axis_node->ref_mesh->mesh_vertex_varying_buffer};
+                                         m_visiable_nodes.p_axis_node->ref_mesh->mesh_vertex_varying_enable_blending_buffer,
+                                         m_visiable_nodes.p_axis_node->ref_mesh->mesh_vertex_varying_buffer};
         VkDeviceSize offsets[]        = {0, 0, 0};
         m_p_vulkan_context->_vkCmdBindVertexBuffers(m_command_info._current_command_buffer,
                                                     0,

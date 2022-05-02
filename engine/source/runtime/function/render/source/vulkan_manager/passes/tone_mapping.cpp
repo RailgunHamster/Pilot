@@ -33,7 +33,7 @@ namespace Pilot
 
         VkDescriptorSetLayoutCreateInfo post_process_global_layout_create_info;
         post_process_global_layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        post_process_global_layout_create_info.pNext = NULL;
+        post_process_global_layout_create_info.pNext = nullptr;
         post_process_global_layout_create_info.flags = 0;
         post_process_global_layout_create_info.bindingCount =
             sizeof(post_process_global_layout_bindings) / sizeof(post_process_global_layout_bindings[0]);
@@ -41,7 +41,7 @@ namespace Pilot
 
         if (VK_SUCCESS != vkCreateDescriptorSetLayout(m_p_vulkan_context->_device,
                                                       &post_process_global_layout_create_info,
-                                                      NULL,
+                                                      nullptr,
                                                       &_descriptor_infos[0].layout))
         {
             throw std::runtime_error("create post process global layout");
@@ -87,9 +87,9 @@ namespace Pilot
         VkPipelineVertexInputStateCreateInfo vertex_input_state_create_info {};
         vertex_input_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         vertex_input_state_create_info.vertexBindingDescriptionCount   = 0;
-        vertex_input_state_create_info.pVertexBindingDescriptions      = NULL;
+        vertex_input_state_create_info.pVertexBindingDescriptions      = nullptr;
         vertex_input_state_create_info.vertexAttributeDescriptionCount = 0;
-        vertex_input_state_create_info.pVertexAttributeDescriptions    = NULL;
+        vertex_input_state_create_info.pVertexAttributeDescriptions    = nullptr;
 
         VkPipelineInputAssemblyStateCreateInfo input_assembly_create_info {};
         input_assembly_create_info.sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -192,7 +192,7 @@ namespace Pilot
     {
         VkDescriptorSetAllocateInfo post_process_global_descriptor_set_alloc_info;
         post_process_global_descriptor_set_alloc_info.sType          = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        post_process_global_descriptor_set_alloc_info.pNext          = NULL;
+        post_process_global_descriptor_set_alloc_info.pNext          = nullptr;
         post_process_global_descriptor_set_alloc_info.descriptorPool = m_descriptor_pool;
         post_process_global_descriptor_set_alloc_info.descriptorSetCount = 1;
         post_process_global_descriptor_set_alloc_info.pSetLayouts        = &_descriptor_infos[0].layout;
@@ -218,7 +218,7 @@ namespace Pilot
         VkWriteDescriptorSet& post_process_descriptor_input_attachment_write_info =
             post_process_descriptor_writes_info[0];
         post_process_descriptor_input_attachment_write_info.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        post_process_descriptor_input_attachment_write_info.pNext           = NULL;
+        post_process_descriptor_input_attachment_write_info.pNext           = nullptr;
         post_process_descriptor_input_attachment_write_info.dstSet          = _descriptor_infos[0].descriptor_set;
         post_process_descriptor_input_attachment_write_info.dstBinding      = 0;
         post_process_descriptor_input_attachment_write_info.dstArrayElement = 0;
@@ -231,7 +231,7 @@ namespace Pilot
                                    sizeof(post_process_descriptor_writes_info[0]),
                                post_process_descriptor_writes_info,
                                0,
-                               NULL);
+                               nullptr);
     }
 
     void PToneMappingPass::draw()
@@ -239,7 +239,7 @@ namespace Pilot
         if (m_render_config._enable_debug_untils_label)
         {
             VkDebugUtilsLabelEXT label_info = {
-                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, NULL, "Tone Map", {1.0f, 1.0f, 1.0f, 1.0f}};
+                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, nullptr, "Tone Map", {1.0f, 1.0f, 1.0f, 1.0f}};
             m_p_vulkan_context->_vkCmdBeginDebugUtilsLabelEXT(m_command_info._current_command_buffer, &label_info);
         }
 
@@ -254,7 +254,7 @@ namespace Pilot
                                                      1,
                                                      &_descriptor_infos[0].descriptor_set,
                                                      0,
-                                                     NULL);
+                                                     nullptr);
 
         vkCmdDraw(m_command_info._current_command_buffer, 3, 1, 0, 0);
 

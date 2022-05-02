@@ -42,7 +42,7 @@ namespace Pilot
 
         VkDescriptorSetLayoutCreateInfo post_process_global_layout_create_info;
         post_process_global_layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        post_process_global_layout_create_info.pNext = NULL;
+        post_process_global_layout_create_info.pNext = nullptr;
         post_process_global_layout_create_info.flags = 0;
         post_process_global_layout_create_info.bindingCount =
             sizeof(post_process_global_layout_bindings) / sizeof(post_process_global_layout_bindings[0]);
@@ -50,7 +50,7 @@ namespace Pilot
 
         if (VK_SUCCESS != vkCreateDescriptorSetLayout(m_p_vulkan_context->_device,
                                                       &post_process_global_layout_create_info,
-                                                      NULL,
+                                                      nullptr,
                                                       &_descriptor_infos[0].layout))
         {
             throw std::runtime_error("create combine ui global layout");
@@ -97,9 +97,9 @@ namespace Pilot
         VkPipelineVertexInputStateCreateInfo vertex_input_state_create_info {};
         vertex_input_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         vertex_input_state_create_info.vertexBindingDescriptionCount   = 0;
-        vertex_input_state_create_info.pVertexBindingDescriptions      = NULL;
+        vertex_input_state_create_info.pVertexBindingDescriptions      = nullptr;
         vertex_input_state_create_info.vertexAttributeDescriptionCount = 0;
-        vertex_input_state_create_info.pVertexAttributeDescriptions    = NULL;
+        vertex_input_state_create_info.pVertexAttributeDescriptions    = nullptr;
 
         VkPipelineInputAssemblyStateCreateInfo input_assembly_create_info {};
         input_assembly_create_info.sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -203,7 +203,7 @@ namespace Pilot
     {
         VkDescriptorSetAllocateInfo post_process_global_descriptor_set_alloc_info;
         post_process_global_descriptor_set_alloc_info.sType          = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        post_process_global_descriptor_set_alloc_info.pNext          = NULL;
+        post_process_global_descriptor_set_alloc_info.pNext          = nullptr;
         post_process_global_descriptor_set_alloc_info.descriptorPool = m_descriptor_pool;
         post_process_global_descriptor_set_alloc_info.descriptorSetCount = 1;
         post_process_global_descriptor_set_alloc_info.pSetLayouts        = &_descriptor_infos[0].layout;
@@ -235,7 +235,7 @@ namespace Pilot
 
         VkWriteDescriptorSet& per_frame_scene_input_attachment_write_info = post_process_descriptor_writes_info[0];
         per_frame_scene_input_attachment_write_info.sType                 = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        per_frame_scene_input_attachment_write_info.pNext                 = NULL;
+        per_frame_scene_input_attachment_write_info.pNext                 = nullptr;
         per_frame_scene_input_attachment_write_info.dstSet                = _descriptor_infos[0].descriptor_set;
         per_frame_scene_input_attachment_write_info.dstBinding            = 0;
         per_frame_scene_input_attachment_write_info.dstArrayElement       = 0;
@@ -245,7 +245,7 @@ namespace Pilot
 
         VkWriteDescriptorSet& per_frame_ui_input_attachment_write_info = post_process_descriptor_writes_info[1];
         per_frame_ui_input_attachment_write_info.sType                 = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        per_frame_ui_input_attachment_write_info.pNext                 = NULL;
+        per_frame_ui_input_attachment_write_info.pNext                 = nullptr;
         per_frame_ui_input_attachment_write_info.dstSet                = _descriptor_infos[0].descriptor_set;
         per_frame_ui_input_attachment_write_info.dstBinding            = 1;
         per_frame_ui_input_attachment_write_info.dstArrayElement       = 0;
@@ -258,7 +258,7 @@ namespace Pilot
                                    sizeof(post_process_descriptor_writes_info[0]),
                                post_process_descriptor_writes_info,
                                0,
-                               NULL);
+                               nullptr);
     }
 
     void PCombineUIPass::draw()
@@ -266,7 +266,7 @@ namespace Pilot
         if (m_render_config._enable_debug_untils_label)
         {
             VkDebugUtilsLabelEXT label_info = {
-                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, NULL, "Combine UI", {1.0f, 1.0f, 1.0f, 1.0f}};
+                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, nullptr, "Combine UI", {1.0f, 1.0f, 1.0f, 1.0f}};
             m_p_vulkan_context->_vkCmdBeginDebugUtilsLabelEXT(m_command_info._current_command_buffer, &label_info);
         }
 
@@ -277,7 +277,7 @@ namespace Pilot
                                0.0,
                                1.0};
         VkRect2D   scissor  = {
-            0, 0, m_p_vulkan_context->_swapchain_extent.width, m_p_vulkan_context->_swapchain_extent.height};
+               0, 0, m_p_vulkan_context->_swapchain_extent.width, m_p_vulkan_context->_swapchain_extent.height};
 
         m_p_vulkan_context->_vkCmdBindPipeline(
             m_command_info._current_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _render_pipelines[0].pipeline);
@@ -290,7 +290,7 @@ namespace Pilot
                                                      1,
                                                      &_descriptor_infos[0].descriptor_set,
                                                      0,
-                                                     NULL);
+                                                     nullptr);
 
         vkCmdDraw(m_command_info._current_command_buffer, 3, 1, 0, 0);
 

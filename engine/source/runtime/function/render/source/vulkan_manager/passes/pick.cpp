@@ -96,7 +96,7 @@ namespace Pilot
         renderpass_create_info.subpassCount    = 1;
         renderpass_create_info.pSubpasses      = &subpass;
         renderpass_create_info.dependencyCount = 0;
-        renderpass_create_info.pDependencies   = NULL;
+        renderpass_create_info.pDependencies   = nullptr;
 
         if (vkCreateRenderPass(
                 m_p_vulkan_context->_device, &renderpass_create_info, nullptr, &_framebuffer.render_pass) != VK_SUCCESS)
@@ -137,7 +137,7 @@ namespace Pilot
             VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
         mesh_inefficient_pick_global_layout_perframe_storage_buffer_binding.descriptorCount = 1;
         mesh_inefficient_pick_global_layout_perframe_storage_buffer_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        mesh_inefficient_pick_global_layout_perframe_storage_buffer_binding.pImmutableSamplers = NULL;
+        mesh_inefficient_pick_global_layout_perframe_storage_buffer_binding.pImmutableSamplers = nullptr;
 
         VkDescriptorSetLayoutBinding& mesh_inefficient_pick_global_layout_perdrawcall_storage_buffer_binding =
             mesh_inefficient_pick_global_layout_bindings[1];
@@ -146,7 +146,7 @@ namespace Pilot
             VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
         mesh_inefficient_pick_global_layout_perdrawcall_storage_buffer_binding.descriptorCount = 1;
         mesh_inefficient_pick_global_layout_perdrawcall_storage_buffer_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        mesh_inefficient_pick_global_layout_perdrawcall_storage_buffer_binding.pImmutableSamplers = NULL;
+        mesh_inefficient_pick_global_layout_perdrawcall_storage_buffer_binding.pImmutableSamplers = nullptr;
 
         VkDescriptorSetLayoutBinding&
             mesh_inefficient_pick_global_layout_perdrawcall_vertex_blending_storage_buffer_binding =
@@ -158,11 +158,11 @@ namespace Pilot
         mesh_inefficient_pick_global_layout_perdrawcall_vertex_blending_storage_buffer_binding.stageFlags =
             VK_SHADER_STAGE_VERTEX_BIT;
         mesh_inefficient_pick_global_layout_perdrawcall_vertex_blending_storage_buffer_binding.pImmutableSamplers =
-            NULL;
+            nullptr;
 
         VkDescriptorSetLayoutCreateInfo mesh_inefficient_pick_global_layout_create_info;
         mesh_inefficient_pick_global_layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        mesh_inefficient_pick_global_layout_create_info.pNext = NULL;
+        mesh_inefficient_pick_global_layout_create_info.pNext = nullptr;
         mesh_inefficient_pick_global_layout_create_info.flags = 0;
         mesh_inefficient_pick_global_layout_create_info.bindingCount =
             (sizeof(mesh_inefficient_pick_global_layout_bindings) /
@@ -171,7 +171,7 @@ namespace Pilot
 
         if (VK_SUCCESS != vkCreateDescriptorSetLayout(m_p_vulkan_context->_device,
                                                       &mesh_inefficient_pick_global_layout_create_info,
-                                                      NULL,
+                                                      nullptr,
                                                       &_descriptor_infos[0].layout))
         {
             throw std::runtime_error("create mesh inefficient pick global layout");
@@ -323,7 +323,7 @@ namespace Pilot
     {
         VkDescriptorSetAllocateInfo mesh_inefficient_pick_global_descriptor_set_alloc_info;
         mesh_inefficient_pick_global_descriptor_set_alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        mesh_inefficient_pick_global_descriptor_set_alloc_info.pNext = NULL;
+        mesh_inefficient_pick_global_descriptor_set_alloc_info.pNext = nullptr;
         mesh_inefficient_pick_global_descriptor_set_alloc_info.descriptorPool     = m_descriptor_pool;
         mesh_inefficient_pick_global_descriptor_set_alloc_info.descriptorSetCount = 1;
         mesh_inefficient_pick_global_descriptor_set_alloc_info.pSetLayouts        = &_descriptor_infos[0].layout;
@@ -366,7 +366,7 @@ namespace Pilot
         VkWriteDescriptorSet mesh_descriptor_writes_info[3];
 
         mesh_descriptor_writes_info[0].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        mesh_descriptor_writes_info[0].pNext           = NULL;
+        mesh_descriptor_writes_info[0].pNext           = nullptr;
         mesh_descriptor_writes_info[0].dstSet          = _descriptor_infos[0].descriptor_set;
         mesh_descriptor_writes_info[0].dstBinding      = 0;
         mesh_descriptor_writes_info[0].dstArrayElement = 0;
@@ -375,7 +375,7 @@ namespace Pilot
         mesh_descriptor_writes_info[0].pBufferInfo     = &mesh_inefficient_pick_perframe_storage_buffer_info;
 
         mesh_descriptor_writes_info[1].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        mesh_descriptor_writes_info[1].pNext           = NULL;
+        mesh_descriptor_writes_info[1].pNext           = nullptr;
         mesh_descriptor_writes_info[1].dstSet          = _descriptor_infos[0].descriptor_set;
         mesh_descriptor_writes_info[1].dstBinding      = 1;
         mesh_descriptor_writes_info[1].dstArrayElement = 0;
@@ -384,7 +384,7 @@ namespace Pilot
         mesh_descriptor_writes_info[1].pBufferInfo     = &mesh_inefficient_pick_perdrawcall_storage_buffer_info;
 
         mesh_descriptor_writes_info[2].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        mesh_descriptor_writes_info[2].pNext           = NULL;
+        mesh_descriptor_writes_info[2].pNext           = nullptr;
         mesh_descriptor_writes_info[2].dstSet          = _descriptor_infos[0].descriptor_set;
         mesh_descriptor_writes_info[2].dstBinding      = 2;
         mesh_descriptor_writes_info[2].dstArrayElement = 0;
@@ -397,7 +397,7 @@ namespace Pilot
                                sizeof(mesh_descriptor_writes_info) / sizeof(mesh_descriptor_writes_info[0]),
                                mesh_descriptor_writes_info,
                                0,
-                               NULL);
+                               nullptr);
     }
     void PPickPass::recreateFramebuffer()
     {
@@ -535,7 +535,7 @@ namespace Pilot
         if (m_render_config._enable_debug_untils_label)
         {
             VkDebugUtilsLabelEXT label_info = {
-                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, NULL, "Mesh Inefficient Pick", {1.0f, 1.0f, 1.0f, 1.0f}};
+                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, nullptr, "Mesh Inefficient Pick", {1.0f, 1.0f, 1.0f, 1.0f}};
             m_p_vulkan_context->_vkCmdBeginDebugUtilsLabelEXT(
                 m_command_info._p_current_command_buffer[*m_command_info._p_current_frame_index], &label_info);
         }
@@ -599,7 +599,7 @@ namespace Pilot
                         1,
                         &mesh.mesh_vertex_blending_descriptor_set,
                         0,
-                        NULL);
+                        nullptr);
 
                     VkBuffer     vertex_buffers[] = {mesh.mesh_vertex_position_buffer};
                     VkDeviceSize offsets[]        = {0};
@@ -748,12 +748,12 @@ namespace Pilot
         VkSubmitInfo submit_info       = {};
         submit_info.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submit_info.waitSemaphoreCount = 0;
-        submit_info.pWaitSemaphores    = NULL;
+        submit_info.pWaitSemaphores    = nullptr;
         submit_info.pWaitDstStageMask  = 0;
         submit_info.commandBufferCount = 1;
         submit_info.pCommandBuffers = &m_command_info._p_current_command_buffer[*m_command_info._p_current_frame_index];
         submit_info.signalSemaphoreCount = 0;
-        submit_info.pSignalSemaphores    = NULL;
+        submit_info.pSignalSemaphores    = nullptr;
 
         VkResult res_queue_submit =
             vkQueueSubmit(m_p_vulkan_context->_graphics_queue,
@@ -785,7 +785,7 @@ namespace Pilot
         region.imageSubresource.layerCount     = 1;
         region.imageOffset                     = {0, 0, 0};
         region.imageExtent                     = {
-            m_p_vulkan_context->_swapchain_extent.width, m_p_vulkan_context->_swapchain_extent.height, 1};
+                                m_p_vulkan_context->_swapchain_extent.width, m_p_vulkan_context->_swapchain_extent.height, 1};
 
         uint32_t buffer_size =
             m_p_vulkan_context->_swapchain_extent.width * m_p_vulkan_context->_swapchain_extent.height * 4;
