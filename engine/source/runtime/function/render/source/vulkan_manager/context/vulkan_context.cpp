@@ -65,11 +65,12 @@
 #error Unknown Compiler
 #endif
 
+#include <cstring>
 #include <iostream>
 #include <set>
 #include <stdexcept>
-#include <cstring>
 #include <string>
+
 
 void Pilot::PVulkanContext::initialize(GLFWwindow* window)
 {
@@ -388,7 +389,7 @@ void Pilot::PVulkanContext::createLogicalDevice()
 
     // physical device features
     VkPhysicalDeviceFeatures physical_device_features = {};
-    
+
     physical_device_features.samplerAnisotropy = VK_TRUE;
 
     // support inefficient readback storage buffer
@@ -448,7 +449,7 @@ void Pilot::PVulkanContext::createCommandPool()
 {
     VkCommandPoolCreateInfo command_pool_create_info {};
     command_pool_create_info.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    command_pool_create_info.pNext            = NULL;
+    command_pool_create_info.pNext            = nullptr;
     command_pool_create_info.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     command_pool_create_info.queueFamilyIndex = _queue_indices.graphicsFamily.value();
 
@@ -466,14 +467,15 @@ void Pilot::PVulkanContext::createFramebufferImageAndView()
                              _swapchain_extent.height,
                              _depth_image_format,
                              VK_IMAGE_TILING_OPTIMAL,
-                             VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
+                             VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+                                 VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
                              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                              _depth_image,
                              _depth_image_memory,
                              0,
                              1,
                              1);
-                             
+
     _depth_image_view = PVulkanUtil::createImageView(
         _device, _depth_image, _depth_image_format, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, 1, 1);
 }

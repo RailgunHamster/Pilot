@@ -53,9 +53,9 @@ namespace Pilot
 
         // legacy
         void renderFrameForward(class Scene&                scene,
-                               class PilotRenderer*        pilot_renderer,
-                               struct SceneReleaseHandles& release_handles,
-                               void*                       ui_state);
+                                class PilotRenderer*        pilot_renderer,
+                                struct SceneReleaseHandles& release_handles,
+                                void*                       ui_state);
 
         // initialize vulkan from io->window
         int initialize(GLFWwindow* window, class Scene& scene, class PilotRenderer* pilot_renderer);
@@ -114,14 +114,15 @@ namespace Pilot
         // global rendering resource, include IBL data, global storage buffer
         PGlobalRenderResource m_global_render_resource;
         // include lighting, shadow, post process, mouse picking pass
-        PDirectionalLightShadowPass m_directional_light_shadow_pass;
-        PPointLightShadowPass       m_point_light_shadow_pass;
-        PMainCameraPass             m_main_camera_pass;
-        PColorGradingPass           m_color_grading_pass;
-        PToneMappingPass            m_tone_mapping_pass;
-        PUIPass                     m_ui_pass;
-        PCombineUIPass              m_combine_ui_pass;
-        PPickPass                   m_mouse_pick_pass;
+        PDirectionalLightShadowPass      m_directional_light_shadow_pass;
+        PPointLightShadowPass            m_point_light_shadow_pass;
+        PMainCameraPass                  m_main_camera_pass;
+        PScreenSpaceAmbientOcclusionPass m_screen_space_ambient_occlusion_pass;
+        PColorGradingPass                m_color_grading_pass;
+        PToneMappingPass                 m_tone_mapping_pass;
+        PUIPass                          m_ui_pass;
+        PCombineUIPass                   m_combine_ui_pass;
+        PPickPass                        m_mouse_pick_pass;
 
         static uint32_t const m_max_frames_in_flight = 3;
         uint32_t              m_current_frame_index  = 0;

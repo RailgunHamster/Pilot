@@ -210,7 +210,7 @@ bool Pilot::PVulkanManager::updateVertexBuffer(bool                             
         // update descriptor set
         VkDescriptorSetAllocateInfo mesh_vertex_blending_per_mesh_descriptor_set_alloc_info;
         mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.pNext = NULL;
+        mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.pNext = nullptr;
         mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.descriptorPool     = m_descriptor_pool;
         mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.descriptorSetCount = 1;
         mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.pSetLayouts =
@@ -238,7 +238,7 @@ bool Pilot::PVulkanManager::updateVertexBuffer(bool                             
             descriptor_writes[0];
         mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.sType =
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.pNext           = NULL;
+        mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.pNext           = nullptr;
         mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.dstSet          = descriptor_set_to_write;
         mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.dstBinding      = 0;
         mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.dstArrayElement = 0;
@@ -380,7 +380,7 @@ bool Pilot::PVulkanManager::updateVertexBuffer(bool                             
         // update descriptor set
         VkDescriptorSetAllocateInfo mesh_vertex_blending_per_mesh_descriptor_set_alloc_info;
         mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.pNext = NULL;
+        mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.pNext = nullptr;
         mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.descriptorPool     = m_descriptor_pool;
         mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.descriptorSetCount = 1;
         mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.pSetLayouts =
@@ -408,7 +408,7 @@ bool Pilot::PVulkanManager::updateVertexBuffer(bool                             
             descriptor_writes[0];
         mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.sType =
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.pNext           = NULL;
+        mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.pNext           = nullptr;
         mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.dstSet          = descriptor_set_to_write;
         mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.dstBinding      = 0;
         mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.dstArrayElement = 0;
@@ -657,7 +657,7 @@ void Pilot::PVulkanManager::initializeCubeMap(VkImage&             image,
                               inefficient_staging_buffer,
                               inefficient_staging_buffer_memory);
 
-    void* data = NULL;
+    void* data = nullptr;
     vkMapMemory(m_vulkan_context._device, inefficient_staging_buffer_memory, 0, cube_byte_size, 0, &data);
     for (int i = 0; i < 6; i++)
     {

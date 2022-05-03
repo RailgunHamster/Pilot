@@ -13,6 +13,20 @@ namespace Pilot
         VkImageView directional_light_shadow_color_image_view;
     };
 
+    class PScreenSpaceAmbientOcclusionPass : public PRenderPassBase
+    {
+    public:
+        void initialize(VkRenderPass render_pass, const std::vector<VkImageView>& input_attachments);
+        void draw();
+
+        void updateAfterFramebufferRecreate(const std::vector<VkImageView>& input_attachments);
+
+    private:
+        void setupDescriptorSetLayout();
+        void setupPipelines();
+        void setupDescriptorSet();
+    };
+
     class PColorGradingPass : public PRenderPassBase
     {
     public:
@@ -90,6 +104,7 @@ namespace Pilot
         _main_camera_subpass_basepass = 0,
         _main_camera_subpass_deferred_lighting,
         _main_camera_subpass_forward_lighting,
+        _custom_screen_space_ambient_occlusion,
         _main_camera_subpass_tone_mapping,
         _main_camera_subpass_color_grading,
         _main_camera_subpass_ui,
@@ -136,12 +151,13 @@ namespace Pilot
 
         void initialize();
 
-        void draw(PColorGradingPass& color_grading_pass,
-                  PToneMappingPass&  tone_mapping_pass,
-                  PUIPass&           ui_pass,
-                  PCombineUIPass&    combine_ui_pass,
-                  uint32_t           current_swapchain_image_index,
-                  void*              ui_state);
+        void draw(PScreenSpaceAmbientOcclusionPass& screen_space_ambient_occlusion_pass,
+                  PToneMappingPass&                 tone_mapping_pass,
+                  PColorGradingPass&                color_grading_pass,
+                  PUIPass&                          ui_pass,
+                  PCombineUIPass&                   combine_ui_pass,
+                  uint32_t                          current_swapchain_image_index,
+                  void*                             ui_state);
 
         // legacy
         void drawForward(PColorGradingPass& color_grading_pass,

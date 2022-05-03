@@ -2,7 +2,7 @@
 # PackageProject.cmake will be used to make our target installable
 set(TARGET_NAME PilotRuntime)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(json_inlcude ${THIRD_PARTY_DIR}/json11)

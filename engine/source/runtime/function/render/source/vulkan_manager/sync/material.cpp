@@ -25,7 +25,7 @@ Pilot::VulkanPBRMaterial& Pilot::PVulkanManager::syncMaterial(const struct Mater
         uint32_t           base_color_image_width    = 1;
         uint32_t           base_color_image_height   = 1;
         PILOT_PIXEL_FORMAT base_color_image_format   = PILOT_PIXEL_FORMAT::PILOT_PIXEL_FORMAT_R8G8B8A8_SRGB;
-        if (base_color_texture_image != NULL)
+        if (base_color_texture_image != nullptr)
         {
             base_color_image_pixels = base_color_texture_image->m_pixels;
             base_color_image_width  = static_cast<uint32_t>(base_color_texture_image->m_width);
@@ -40,7 +40,7 @@ Pilot::VulkanPBRMaterial& Pilot::PVulkanManager::syncMaterial(const struct Mater
         uint32_t           metallic_roughness_width        = 1;
         uint32_t           metallic_roughness_height       = 1;
         PILOT_PIXEL_FORMAT metallic_roughness_format       = PILOT_PIXEL_FORMAT::PILOT_PIXEL_FORMAT_R8G8B8A8_UNORM;
-        if (metallic_roughness_texture_image != NULL)
+        if (metallic_roughness_texture_image != nullptr)
         {
             metallic_roughness_image_pixels = metallic_roughness_texture_image->m_pixels;
             metallic_roughness_width        = static_cast<uint32_t>(metallic_roughness_texture_image->m_width);
@@ -54,7 +54,7 @@ Pilot::VulkanPBRMaterial& Pilot::PVulkanManager::syncMaterial(const struct Mater
         uint32_t           normal_roughness_width        = 1;
         uint32_t           normal_roughness_height       = 1;
         PILOT_PIXEL_FORMAT normal_roughness_format       = PILOT_PIXEL_FORMAT::PILOT_PIXEL_FORMAT_R8G8B8A8_UNORM;
-        if (normal_texture_image != NULL)
+        if (normal_texture_image != nullptr)
         {
             normal_roughness_image_pixels = normal_texture_image->m_pixels;
             normal_roughness_width        = static_cast<uint32_t>(normal_texture_image->m_width);
@@ -70,7 +70,7 @@ Pilot::VulkanPBRMaterial& Pilot::PVulkanManager::syncMaterial(const struct Mater
         uint32_t           occlusion_image_width    = 1;
         uint32_t           occlusion_image_height   = 1;
         PILOT_PIXEL_FORMAT occlusion_image_format   = PILOT_PIXEL_FORMAT::PILOT_PIXEL_FORMAT_R8G8B8A8_UNORM;
-        if (occlusion_texture_image != NULL)
+        if (occlusion_texture_image != nullptr)
         {
             occlusion_image_pixels = occlusion_texture_image->m_pixels;
             occlusion_image_width  = static_cast<uint32_t>(occlusion_texture_image->m_width);
@@ -84,7 +84,7 @@ Pilot::VulkanPBRMaterial& Pilot::PVulkanManager::syncMaterial(const struct Mater
         uint32_t           emissive_image_width    = 1;
         uint32_t           emissive_image_height   = 1;
         PILOT_PIXEL_FORMAT emissive_image_format   = PILOT_PIXEL_FORMAT::PILOT_PIXEL_FORMAT_R8G8B8A8_UNORM;
-        if (emissive_texture_image != NULL)
+        if (emissive_texture_image != nullptr)
         {
             emissive_image_pixels = emissive_texture_image->m_pixels;
             emissive_image_width  = static_cast<uint32_t>(emissive_texture_image->m_width);
@@ -131,20 +131,20 @@ Pilot::VulkanPBRMaterial& Pilot::PVulkanManager::syncMaterial(const struct Mater
             vkUnmapMemory(m_vulkan_context._device, inefficient_staging_buffer_memory);
 
             // use the vmaAllocator to allocate asset uniform buffer
-            VkBufferCreateInfo bufferInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-            bufferInfo.size               = buffer_size;
-            bufferInfo.usage              = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            VkBufferCreateInfo buffer_info = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+            buffer_info.size               = buffer_size;
+            buffer_info.usage              = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
-            VmaAllocationCreateInfo allocInfo = {};
-            allocInfo.usage                   = VMA_MEMORY_USAGE_GPU_ONLY;
+            VmaAllocationCreateInfo alloc_info = {};
+            alloc_info.usage                   = VMA_MEMORY_USAGE_GPU_ONLY;
 
             vmaCreateBufferWithAlignment(m_vulkan_context._assets_allocator,
-                                         &bufferInfo,
-                                         &allocInfo,
+                                         &buffer_info,
+                                         &alloc_info,
                                          m_global_render_resource._storage_buffer._min_uniform_buffer_offset_alignment,
                                          &now_material.material_uniform_buffer,
                                          &now_material.material_uniform_buffer_allocation,
-                                         NULL);
+                                         nullptr);
 
             // use the data from staging buffer
             PVulkanUtil::copyBuffer(
@@ -182,7 +182,7 @@ Pilot::VulkanPBRMaterial& Pilot::PVulkanManager::syncMaterial(const struct Mater
 
         VkDescriptorSetAllocateInfo material_descriptor_set_alloc_info;
         material_descriptor_set_alloc_info.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        material_descriptor_set_alloc_info.pNext              = NULL;
+        material_descriptor_set_alloc_info.pNext              = nullptr;
         material_descriptor_set_alloc_info.descriptorPool     = m_descriptor_pool;
         material_descriptor_set_alloc_info.descriptorSetCount = 1;
         material_descriptor_set_alloc_info.pSetLayouts =
@@ -239,7 +239,7 @@ Pilot::VulkanPBRMaterial& Pilot::PVulkanManager::syncMaterial(const struct Mater
         VkWriteDescriptorSet mesh_descriptor_writes_info[6];
 
         mesh_descriptor_writes_info[0].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        mesh_descriptor_writes_info[0].pNext           = NULL;
+        mesh_descriptor_writes_info[0].pNext           = nullptr;
         mesh_descriptor_writes_info[0].dstSet          = now_material.material_descriptor_set;
         mesh_descriptor_writes_info[0].dstBinding      = 0;
         mesh_descriptor_writes_info[0].dstArrayElement = 0;
@@ -248,7 +248,7 @@ Pilot::VulkanPBRMaterial& Pilot::PVulkanManager::syncMaterial(const struct Mater
         mesh_descriptor_writes_info[0].pBufferInfo     = &material_uniform_buffer_info;
 
         mesh_descriptor_writes_info[1].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        mesh_descriptor_writes_info[1].pNext           = NULL;
+        mesh_descriptor_writes_info[1].pNext           = nullptr;
         mesh_descriptor_writes_info[1].dstSet          = now_material.material_descriptor_set;
         mesh_descriptor_writes_info[1].dstBinding      = 1;
         mesh_descriptor_writes_info[1].dstArrayElement = 0;

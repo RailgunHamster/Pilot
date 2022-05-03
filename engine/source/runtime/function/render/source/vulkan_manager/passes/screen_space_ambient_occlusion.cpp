@@ -4,32 +4,53 @@
 #include "runtime/function/render/include/render/vulkan_manager/vulkan_passes.h"
 #include "runtime/function/render/include/render/vulkan_manager/vulkan_util.h"
 
+#include "vulkan/vulkan_core.h"
 #include <post_process_vert.h>
-#include <tone_mapping_frag.h>
+#include <screen_space_ambient_occlusion_frag.h>
 
 namespace Pilot
 {
-    void PToneMappingPass::initialize(VkRenderPass render_pass, VkImageView input_attachment)
+    void PScreenSpaceAmbientOcclusionPass::initialize(VkRenderPass                    render_pass,
+                                                      const std::vector<VkImageView>& input_attachments)
     {
         _framebuffer.render_pass = render_pass;
         setupDescriptorSetLayout();
         setupPipelines();
         setupDescriptorSet();
-        updateAfterFramebufferRecreate(input_attachment);
+        updateAfterFramebufferRecreate(input_attachments);
     }
 
-    void PToneMappingPass::setupDescriptorSetLayout()
+    void PScreenSpaceAmbientOcclusionPass::setupDescriptorSetLayout()
     {
         _descriptor_infos.resize(1);
 
-        VkDescriptorSetLayoutBinding post_process_global_layout_bindings[1] = {};
+        VkDescriptorSetLayoutBinding post_process_global_layout_bindings[5] = {};
 
-        VkDescriptorSetLayoutBinding& post_process_global_layout_input_attachment_binding =
-            post_process_global_layout_bindings[0];
-        post_process_global_layout_input_attachment_binding.binding         = 0;
-        post_process_global_layout_input_attachment_binding.descriptorType  = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-        post_process_global_layout_input_attachment_binding.descriptorCount = 1;
-        post_process_global_layout_input_attachment_binding.stageFlags      = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding& gbuffer_a = post_process_global_layout_bindings[0];
+        gbuffer_a.binding                       = 0;
+        gbuffer_a.descriptorType                = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        gbuffer_a.descriptorCount               = 1;
+        gbuffer_a.stageFlags                    = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding& gbuffer_b = post_process_global_layout_bindings[1];
+        gbuffer_b.binding                       = 1;
+        gbuffer_b.descriptorType                = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        gbuffer_b.descriptorCount               = 1;
+        gbuffer_b.stageFlags                    = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding& gbuffer_c = post_process_global_layout_bindings[2];
+        gbuffer_c.binding                       = 2;
+        gbuffer_c.descriptorType                = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        gbuffer_c.descriptorCount               = 1;
+        gbuffer_c.stageFlags                    = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding& depth     = post_process_global_layout_bindings[3];
+        depth.binding                           = 3;
+        depth.descriptorType                    = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        depth.descriptorCount                   = 1;
+        depth.stageFlags                        = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding& deferred  = post_process_global_layout_bindings[4];
+        deferred.binding                        = 4;
+        deferred.descriptorType                 = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        deferred.descriptorCount                = 1;
+        deferred.stageFlags                     = VK_SHADER_STAGE_FRAGMENT_BIT;
 
         VkDescriptorSetLayoutCreateInfo post_process_global_layout_create_info;
         post_process_global_layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -47,7 +68,8 @@ namespace Pilot
             throw std::runtime_error("create post process global layout");
         }
     }
-    void PToneMappingPass::setupPipelines()
+
+    void PScreenSpaceAmbientOcclusionPass::setupPipelines()
     {
         _render_pipelines.resize(1);
 
@@ -67,7 +89,7 @@ namespace Pilot
         VkShaderModule vert_shader_module =
             PVulkanUtil::createShaderModule(m_p_vulkan_context->_device, POST_PROCESS_VERT);
         VkShaderModule frag_shader_module =
-            PVulkanUtil::createShaderModule(m_p_vulkan_context->_device, TONE_MAPPING_FRAG);
+            PVulkanUtil::createShaderModule(m_p_vulkan_context->_device, SCREEN_SPACE_AMBIENT_OCCLUSION_FRAG);
 
         VkPipelineShaderStageCreateInfo vert_pipeline_shader_stage_create_info {};
         vert_pipeline_shader_stage_create_info.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -171,7 +193,7 @@ namespace Pilot
         pipeline_info.pDepthStencilState  = &depth_stencil_create_info;
         pipeline_info.layout              = _render_pipelines[0].layout;
         pipeline_info.renderPass          = _framebuffer.render_pass;
-        pipeline_info.subpass             = _main_camera_subpass_tone_mapping;
+        pipeline_info.subpass             = _custom_screen_space_ambient_occlusion;
         pipeline_info.basePipelineHandle  = VK_NULL_HANDLE;
         pipeline_info.pDynamicState       = &dynamic_state_create_info;
 
@@ -188,7 +210,8 @@ namespace Pilot
         vkDestroyShaderModule(m_p_vulkan_context->_device, vert_shader_module, nullptr);
         vkDestroyShaderModule(m_p_vulkan_context->_device, frag_shader_module, nullptr);
     }
-    void PToneMappingPass::setupDescriptorSet()
+
+    void PScreenSpaceAmbientOcclusionPass::setupDescriptorSet()
     {
         VkDescriptorSetAllocateInfo post_process_global_descriptor_set_alloc_info;
         post_process_global_descriptor_set_alloc_info.sType          = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -205,26 +228,96 @@ namespace Pilot
         }
     }
 
-    void PToneMappingPass::updateAfterFramebufferRecreate(VkImageView input_attachment)
+    void
+    PScreenSpaceAmbientOcclusionPass::updateAfterFramebufferRecreate(const std::vector<VkImageView>& input_attachments)
     {
-        VkDescriptorImageInfo post_process_per_frame_input_attachment_info = {};
-        post_process_per_frame_input_attachment_info.sampler =
+        VkDescriptorImageInfo post_process_per_frame_gbuffer_a_attachment_info = {};
+        post_process_per_frame_gbuffer_a_attachment_info.sampler =
             PVulkanUtil::getOrCreateNearestSampler(m_p_vulkan_context->_physical_device, m_p_vulkan_context->_device);
-        post_process_per_frame_input_attachment_info.imageView   = input_attachment;
-        post_process_per_frame_input_attachment_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        post_process_per_frame_gbuffer_a_attachment_info.imageView   = input_attachments[_main_camera_pass_gbuffer_a];
+        post_process_per_frame_gbuffer_a_attachment_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-        VkWriteDescriptorSet post_process_descriptor_writes_info[1];
+        VkDescriptorImageInfo post_process_per_frame_gbuffer_b_attachment_info = {};
+        post_process_per_frame_gbuffer_b_attachment_info.sampler =
+            PVulkanUtil::getOrCreateNearestSampler(m_p_vulkan_context->_physical_device, m_p_vulkan_context->_device);
+        post_process_per_frame_gbuffer_b_attachment_info.imageView   = input_attachments[_main_camera_pass_gbuffer_b];
+        post_process_per_frame_gbuffer_b_attachment_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-        VkWriteDescriptorSet& post_process_descriptor_input_attachment_write_info =
+        VkDescriptorImageInfo post_process_per_frame_gbuffer_c_attachment_info = {};
+        post_process_per_frame_gbuffer_c_attachment_info.sampler =
+            PVulkanUtil::getOrCreateNearestSampler(m_p_vulkan_context->_physical_device, m_p_vulkan_context->_device);
+        post_process_per_frame_gbuffer_c_attachment_info.imageView   = input_attachments[_main_camera_pass_gbuffer_c];
+        post_process_per_frame_gbuffer_c_attachment_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        VkDescriptorImageInfo depth_input_attachment_info = {};
+        depth_input_attachment_info.sampler =
+            PVulkanUtil::getOrCreateNearestSampler(m_p_vulkan_context->_physical_device, m_p_vulkan_context->_device);
+        depth_input_attachment_info.imageView   = m_p_vulkan_context->_depth_image_view;
+        depth_input_attachment_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        VkDescriptorImageInfo color_attachment_info = {};
+        color_attachment_info.sampler =
+            PVulkanUtil::getOrCreateNearestSampler(m_p_vulkan_context->_physical_device, m_p_vulkan_context->_device);
+        color_attachment_info.imageView   = input_attachments[_main_camera_pass_backup_buffer_odd];
+        color_attachment_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        VkWriteDescriptorSet post_process_descriptor_writes_info[5];
+
+        VkWriteDescriptorSet& post_process_descriptor_gbuffer_a_attachment_write_info =
             post_process_descriptor_writes_info[0];
-        post_process_descriptor_input_attachment_write_info.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        post_process_descriptor_input_attachment_write_info.pNext           = nullptr;
-        post_process_descriptor_input_attachment_write_info.dstSet          = _descriptor_infos[0].descriptor_set;
-        post_process_descriptor_input_attachment_write_info.dstBinding      = 0;
-        post_process_descriptor_input_attachment_write_info.dstArrayElement = 0;
-        post_process_descriptor_input_attachment_write_info.descriptorType  = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-        post_process_descriptor_input_attachment_write_info.descriptorCount = 1;
-        post_process_descriptor_input_attachment_write_info.pImageInfo = &post_process_per_frame_input_attachment_info;
+        post_process_descriptor_gbuffer_a_attachment_write_info.sType      = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        post_process_descriptor_gbuffer_a_attachment_write_info.pNext      = nullptr;
+        post_process_descriptor_gbuffer_a_attachment_write_info.dstSet     = _descriptor_infos[0].descriptor_set;
+        post_process_descriptor_gbuffer_a_attachment_write_info.dstBinding = 0;
+        post_process_descriptor_gbuffer_a_attachment_write_info.dstArrayElement = 0;
+        post_process_descriptor_gbuffer_a_attachment_write_info.descriptorType  = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        post_process_descriptor_gbuffer_a_attachment_write_info.descriptorCount = 1;
+        post_process_descriptor_gbuffer_a_attachment_write_info.pImageInfo =
+            &post_process_per_frame_gbuffer_a_attachment_info;
+
+        VkWriteDescriptorSet& post_process_descriptor_gbuffer_b_attachment_write_info =
+            post_process_descriptor_writes_info[1];
+        post_process_descriptor_gbuffer_b_attachment_write_info.sType      = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        post_process_descriptor_gbuffer_b_attachment_write_info.pNext      = nullptr;
+        post_process_descriptor_gbuffer_b_attachment_write_info.dstSet     = _descriptor_infos[0].descriptor_set;
+        post_process_descriptor_gbuffer_b_attachment_write_info.dstBinding = 1;
+        post_process_descriptor_gbuffer_b_attachment_write_info.dstArrayElement = 0;
+        post_process_descriptor_gbuffer_b_attachment_write_info.descriptorType  = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        post_process_descriptor_gbuffer_b_attachment_write_info.descriptorCount = 1;
+        post_process_descriptor_gbuffer_b_attachment_write_info.pImageInfo =
+            &post_process_per_frame_gbuffer_b_attachment_info;
+
+        VkWriteDescriptorSet& post_process_descriptor_gbuffer_c_attachment_write_info =
+            post_process_descriptor_writes_info[2];
+        post_process_descriptor_gbuffer_c_attachment_write_info.sType      = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        post_process_descriptor_gbuffer_c_attachment_write_info.pNext      = nullptr;
+        post_process_descriptor_gbuffer_c_attachment_write_info.dstSet     = _descriptor_infos[0].descriptor_set;
+        post_process_descriptor_gbuffer_c_attachment_write_info.dstBinding = 2;
+        post_process_descriptor_gbuffer_c_attachment_write_info.dstArrayElement = 0;
+        post_process_descriptor_gbuffer_c_attachment_write_info.descriptorType  = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        post_process_descriptor_gbuffer_c_attachment_write_info.descriptorCount = 1;
+        post_process_descriptor_gbuffer_c_attachment_write_info.pImageInfo =
+            &post_process_per_frame_gbuffer_c_attachment_info;
+
+        VkWriteDescriptorSet& depth_descriptor_input_attachment_write_info = post_process_descriptor_writes_info[3];
+        depth_descriptor_input_attachment_write_info.sType                 = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        depth_descriptor_input_attachment_write_info.pNext                 = nullptr;
+        depth_descriptor_input_attachment_write_info.dstSet                = _descriptor_infos[0].descriptor_set;
+        depth_descriptor_input_attachment_write_info.dstBinding            = 3;
+        depth_descriptor_input_attachment_write_info.dstArrayElement       = 0;
+        depth_descriptor_input_attachment_write_info.descriptorType        = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        depth_descriptor_input_attachment_write_info.descriptorCount       = 1;
+        depth_descriptor_input_attachment_write_info.pImageInfo            = &depth_input_attachment_info;
+
+        VkWriteDescriptorSet& color_input_attachment_write_info = post_process_descriptor_writes_info[4];
+        color_input_attachment_write_info.sType                 = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        color_input_attachment_write_info.pNext                 = nullptr;
+        color_input_attachment_write_info.dstSet                = _descriptor_infos[0].descriptor_set;
+        color_input_attachment_write_info.dstBinding            = 4;
+        color_input_attachment_write_info.dstArrayElement       = 0;
+        color_input_attachment_write_info.descriptorType        = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        color_input_attachment_write_info.descriptorCount       = 1;
+        color_input_attachment_write_info.pImageInfo            = &color_attachment_info;
 
         vkUpdateDescriptorSets(m_p_vulkan_context->_device,
                                sizeof(post_process_descriptor_writes_info) /
@@ -234,12 +327,14 @@ namespace Pilot
                                nullptr);
     }
 
-    void PToneMappingPass::draw()
+    void PScreenSpaceAmbientOcclusionPass::draw()
     {
         if (m_render_config._enable_debug_untils_label)
         {
-            VkDebugUtilsLabelEXT label_info = {
-                VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT, nullptr, "Tone Map", {1.0f, 1.0f, 1.0f, 1.0f}};
+            VkDebugUtilsLabelEXT label_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
+                                               nullptr,
+                                               "Screen Space Ambient Occlusion",
+                                               {1.0f, 1.0f, 1.0f, 1.0f}};
             m_p_vulkan_context->_vkCmdBeginDebugUtilsLabelEXT(m_command_info._current_command_buffer, &label_info);
         }
 

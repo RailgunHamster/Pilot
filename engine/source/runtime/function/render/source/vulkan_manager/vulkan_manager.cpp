@@ -6,11 +6,11 @@ uint32_t Pilot::PVulkanManager::m_max_vertex_blending_mesh_count = 256;
 uint32_t Pilot::PVulkanManager::m_max_material_count             = 256;
 
 #ifndef NDEBUG
-bool Pilot::PVulkanManager::m_enable_validation_Layers  = true;
+bool Pilot::PVulkanManager::m_enable_validation_Layers = true;
 bool Pilot::PVulkanManager::m_enable_debug_utils_label = true;
 #else
 bool Pilot::PVulkanManager::m_enable_validation_Layers  = false;
-bool Pilot::PVulkanManager::m_enable_debug_utils_label = false;
+bool Pilot::PVulkanManager::m_enable_debug_utils_label  = false;
 #endif
 
 #if defined(__GNUC__) && defined(__MACH__)
@@ -21,7 +21,7 @@ bool Pilot::PVulkanManager::m_enable_point_light_shadow = false;
 bool Pilot::PVulkanManager::m_enable_point_light_shadow = true;
 #endif
 
-Pilot::PVulkanManager::PVulkanManager() {}
+Pilot::PVulkanManager::PVulkanManager() = default;
 
 void Pilot::PVulkanManager::prepareContext()
 {
@@ -95,9 +95,9 @@ void Pilot::PVulkanManager::renderFrame(class Scene&                scene,
         submit_info.pWaitSemaphores        = &m_image_available_for_render_semaphores[m_current_frame_index];
         submit_info.pWaitDstStageMask      = wait_stages;
         submit_info.commandBufferCount     = 0;
-        submit_info.pCommandBuffers        = NULL;
+        submit_info.pCommandBuffers        = nullptr;
         submit_info.signalSemaphoreCount   = 0;
-        submit_info.pSignalSemaphores      = NULL;
+        submit_info.pSignalSemaphores      = nullptr;
 
         VkResult res_reset_fences = m_vulkan_context._vkResetFences(
             m_vulkan_context._device, 1, &m_is_frame_in_flight_fences[m_current_frame_index]);
@@ -129,8 +129,13 @@ void Pilot::PVulkanManager::renderFrame(class Scene&                scene,
 
     m_point_light_shadow_pass.draw();
 
-    m_main_camera_pass.draw(
-        m_color_grading_pass, m_tone_mapping_pass, m_ui_pass, m_combine_ui_pass, current_swapchain_image_index, ui_state);
+    m_main_camera_pass.draw(m_screen_space_ambient_occlusion_pass,
+                            m_tone_mapping_pass,
+                            m_color_grading_pass,
+                            m_ui_pass,
+                            m_combine_ui_pass,
+                            current_swapchain_image_index,
+                            ui_state);
 
     // end command buffer
     VkResult res_end_command_buffer = m_vulkan_context._vkEndCommandBuffer(m_command_buffers[m_current_frame_index]);
@@ -179,9 +184,9 @@ void Pilot::PVulkanManager::renderFrame(class Scene&                scene,
 }
 
 void Pilot::PVulkanManager::renderFrameForward(class Scene&                scene,
-                                              class PilotRenderer*        pilot_renderer,
-                                              struct SceneReleaseHandles& release_handles,
-                                              void*                       ui_state)
+                                               class PilotRenderer*        pilot_renderer,
+                                               struct SceneReleaseHandles& release_handles,
+                                               void*                       ui_state)
 {
     this->cullingAndSyncScene(scene, pilot_renderer, release_handles);
 
@@ -227,9 +232,9 @@ void Pilot::PVulkanManager::renderFrameForward(class Scene&                scene
         submit_info.pWaitSemaphores        = &m_image_available_for_render_semaphores[m_current_frame_index];
         submit_info.pWaitDstStageMask      = wait_stages;
         submit_info.commandBufferCount     = 0;
-        submit_info.pCommandBuffers        = NULL;
+        submit_info.pCommandBuffers        = nullptr;
         submit_info.signalSemaphoreCount   = 0;
-        submit_info.pSignalSemaphores      = NULL;
+        submit_info.pSignalSemaphores      = nullptr;
 
         VkResult res_reset_fences = m_vulkan_context._vkResetFences(
             m_vulkan_context._device, 1, &m_is_frame_in_flight_fences[m_current_frame_index]);
@@ -261,8 +266,12 @@ void Pilot::PVulkanManager::renderFrameForward(class Scene&                scene
 
     m_point_light_shadow_pass.draw();
 
-    m_main_camera_pass.drawForward(
-        m_color_grading_pass, m_tone_mapping_pass, m_ui_pass, m_combine_ui_pass, current_swapchain_image_index, ui_state);
+    m_main_camera_pass.drawForward(m_color_grading_pass,
+                                   m_tone_mapping_pass,
+                                   m_ui_pass,
+                                   m_combine_ui_pass,
+                                   current_swapchain_image_index,
+                                   ui_state);
 
     // end command buffer
     VkResult res_end_command_buffer = m_vulkan_context._vkEndCommandBuffer(m_command_buffers[m_current_frame_index]);
@@ -313,10 +322,10 @@ void Pilot::PVulkanManager::renderFrameForward(class Scene&                scene
 void Pilot::PVulkanManager::clear()
 {
     // cleanup is incomplete, only for demonstration
-    for (uint32_t i = 0; i < m_max_frames_in_flight; ++i)
+    for (auto& m_is_frame_in_flight_fence : m_is_frame_in_flight_fences)
     {
         VkResult res_wait_for_fences =
-            vkWaitForFences(m_vulkan_context._device, 1, &m_is_frame_in_flight_fences[i], VK_TRUE, UINT64_MAX);
+            vkWaitForFences(m_vulkan_context._device, 1, &m_is_frame_in_flight_fence, VK_TRUE, UINT64_MAX);
         assert(VK_SUCCESS == res_wait_for_fences);
     }
 
@@ -414,7 +423,7 @@ void Pilot::PVulkanManager::clear()
         vkDestroyFence(m_vulkan_context._device, m_is_frame_in_flight_fences[i], nullptr);
 
         vkFreeCommandBuffers(m_vulkan_context._device, m_command_pools[i], 1, &m_command_buffers[i]);
-        vkDestroyCommandPool(m_vulkan_context._device, m_command_pools[i], NULL);
+        vkDestroyCommandPool(m_vulkan_context._device, m_command_pools[i], nullptr);
     }
 
     vkDestroyCommandPool(m_vulkan_context._device, m_vulkan_context._command_pool, nullptr);

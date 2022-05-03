@@ -1,4 +1,6 @@
 
+set(CMAKE_CXX_STANDARD 23)
+
 set(ENGINE_ROOT_DIR "${PILOT_ROOT_DIR}/engine")
 set(THIRD_PARTY_DIR "${ENGINE_ROOT_DIR}/3rdparty")
 set(ENGINE_ASSET_DIR "/asset")

@@ -4,6 +4,7 @@
 #include "runtime/function/render/include/render/vulkan_manager/vulkan_passes.h"
 #include "runtime/function/render/include/render/vulkan_manager/vulkan_util.h"
 
+#include "vulkan/vulkan_core.h"
 #include <map>
 #include <stdexcept>
 
@@ -233,14 +234,60 @@ namespace Pilot
         forward_lighting_pass.preserveAttachmentCount = 0;
         forward_lighting_pass.pPreserveAttachments    = nullptr;
 
+        // custom
+
+        VkAttachmentReference screen_space_ambient_occlusion_pass_input_attachments_reference[5] = {};
+        screen_space_ambient_occlusion_pass_input_attachments_reference[0].attachment =
+            &gbuffer_normal_attachment_description - attachments;
+        screen_space_ambient_occlusion_pass_input_attachments_reference[0].layout =
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        screen_space_ambient_occlusion_pass_input_attachments_reference[1].attachment =
+            &gbuffer_metallic_roughness_shadingmodeid_attachment_description - attachments;
+        screen_space_ambient_occlusion_pass_input_attachments_reference[1].layout =
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        screen_space_ambient_occlusion_pass_input_attachments_reference[2].attachment =
+            &gbuffer_albedo_attachment_description - attachments;
+        screen_space_ambient_occlusion_pass_input_attachments_reference[2].layout =
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        screen_space_ambient_occlusion_pass_input_attachments_reference[3].attachment =
+            &depth_attachment_description - attachments;
+        screen_space_ambient_occlusion_pass_input_attachments_reference[3].layout =
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        screen_space_ambient_occlusion_pass_input_attachments_reference[4].attachment =
+            &backup_odd_color_attachment_description - attachments;
+        screen_space_ambient_occlusion_pass_input_attachments_reference[4].layout =
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        VkAttachmentReference screen_space_ambient_occlusion_pass_color_attachments_reference {};
+        screen_space_ambient_occlusion_pass_color_attachments_reference.attachment =
+            &backup_even_color_attachment_description - attachments;
+        screen_space_ambient_occlusion_pass_color_attachments_reference.layout =
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        VkSubpassDescription& screen_space_ambient_occlusion_pass = subpasses[_custom_screen_space_ambient_occlusion];
+        screen_space_ambient_occlusion_pass.pipelineBindPoint     = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        screen_space_ambient_occlusion_pass.inputAttachmentCount =
+            sizeof(screen_space_ambient_occlusion_pass_input_attachments_reference) /
+            sizeof(screen_space_ambient_occlusion_pass_input_attachments_reference[0]);
+        screen_space_ambient_occlusion_pass.pInputAttachments =
+            &screen_space_ambient_occlusion_pass_input_attachments_reference[0];
+        screen_space_ambient_occlusion_pass.colorAttachmentCount = 1;
+        screen_space_ambient_occlusion_pass.pColorAttachments =
+            &screen_space_ambient_occlusion_pass_color_attachments_reference;
+        screen_space_ambient_occlusion_pass.pDepthStencilAttachment = nullptr;
+        screen_space_ambient_occlusion_pass.preserveAttachmentCount = 0;
+        screen_space_ambient_occlusion_pass.pPreserveAttachments    = nullptr;
+
+        // custom
+
         VkAttachmentReference tone_mapping_pass_input_attachment_reference {};
         tone_mapping_pass_input_attachment_reference.attachment =
-            &backup_odd_color_attachment_description - attachments;
+            &backup_even_color_attachment_description - attachments;
         tone_mapping_pass_input_attachment_reference.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         VkAttachmentReference tone_mapping_pass_color_attachment_reference {};
         tone_mapping_pass_color_attachment_reference.attachment =
-            &backup_even_color_attachment_description - attachments;
+            &backup_odd_color_attachment_description - attachments;
         tone_mapping_pass_color_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
         VkSubpassDescription& tone_mapping_pass   = subpasses[_main_camera_subpass_tone_mapping];
@@ -255,12 +302,12 @@ namespace Pilot
 
         VkAttachmentReference color_grading_pass_input_attachment_reference {};
         color_grading_pass_input_attachment_reference.attachment =
-            &backup_even_color_attachment_description - attachments;
+            &backup_odd_color_attachment_description - attachments;
         color_grading_pass_input_attachment_reference.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         VkAttachmentReference color_grading_pass_color_attachment_reference {};
         color_grading_pass_color_attachment_reference.attachment =
-            &backup_odd_color_attachment_description - attachments;
+            &backup_even_color_attachment_description - attachments;
         color_grading_pass_color_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
         VkSubpassDescription& color_grading_pass   = subpasses[_main_camera_subpass_color_grading];
@@ -274,10 +321,10 @@ namespace Pilot
         color_grading_pass.pPreserveAttachments    = nullptr;
 
         VkAttachmentReference ui_pass_color_attachment_reference {};
-        ui_pass_color_attachment_reference.attachment = &backup_even_color_attachment_description - attachments;
+        ui_pass_color_attachment_reference.attachment = &backup_odd_color_attachment_description - attachments;
         ui_pass_color_attachment_reference.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-        uint32_t ui_pass_preserve_attachment = &backup_odd_color_attachment_description - attachments;
+        uint32_t ui_pass_preserve_attachment = &backup_even_color_attachment_description - attachments;
 
         VkSubpassDescription& ui_pass   = subpasses[_main_camera_subpass_ui];
         ui_pass.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
@@ -312,7 +359,7 @@ namespace Pilot
         combine_ui_pass.preserveAttachmentCount = 0;
         combine_ui_pass.pPreserveAttachments    = nullptr;
 
-        VkSubpassDependency dependencies[7] = {};
+        VkSubpassDependency dependencies[8] = {};
 
         VkSubpassDependency& deferred_lighting_pass_depend_on_shadow_map_pass = dependencies[0];
         deferred_lighting_pass_depend_on_shadow_map_pass.srcSubpass           = VK_SUBPASS_EXTERNAL;
@@ -349,20 +396,38 @@ namespace Pilot
             VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
         forward_lighting_pass_depend_on_deferred_lighting_pass.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-        VkSubpassDependency& tone_mapping_pass_depend_on_lighting_pass = dependencies[3];
-        tone_mapping_pass_depend_on_lighting_pass.srcSubpass           = _main_camera_subpass_forward_lighting;
-        tone_mapping_pass_depend_on_lighting_pass.dstSubpass           = _main_camera_subpass_tone_mapping;
-        tone_mapping_pass_depend_on_lighting_pass.srcStageMask =
+        // custom
+        VkSubpassDependency& screen_space_ambient_occlusion_depend_on_forward_lighting_pass = dependencies[3];
+        screen_space_ambient_occlusion_depend_on_forward_lighting_pass.srcSubpass =
+            _main_camera_subpass_forward_lighting;
+        screen_space_ambient_occlusion_depend_on_forward_lighting_pass.dstSubpass =
+            _custom_screen_space_ambient_occlusion;
+        screen_space_ambient_occlusion_depend_on_forward_lighting_pass.srcStageMask =
             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        tone_mapping_pass_depend_on_lighting_pass.dstStageMask =
+        screen_space_ambient_occlusion_depend_on_forward_lighting_pass.dstStageMask =
             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        tone_mapping_pass_depend_on_lighting_pass.srcAccessMask =
+        screen_space_ambient_occlusion_depend_on_forward_lighting_pass.srcAccessMask =
             VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        tone_mapping_pass_depend_on_lighting_pass.dstAccessMask =
+        screen_space_ambient_occlusion_depend_on_forward_lighting_pass.dstAccessMask =
             VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-        tone_mapping_pass_depend_on_lighting_pass.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+        screen_space_ambient_occlusion_depend_on_forward_lighting_pass.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+        // custom
 
-        VkSubpassDependency& color_grading_pass_depend_on_tone_mapping_pass = dependencies[4];
+        VkSubpassDependency& tone_mapping_pass_depend_on_screen_space_ambient_occlusion_pass = dependencies[4];
+        tone_mapping_pass_depend_on_screen_space_ambient_occlusion_pass.srcSubpass =
+            _custom_screen_space_ambient_occlusion;
+        tone_mapping_pass_depend_on_screen_space_ambient_occlusion_pass.dstSubpass = _main_camera_subpass_tone_mapping;
+        tone_mapping_pass_depend_on_screen_space_ambient_occlusion_pass.srcStageMask =
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        tone_mapping_pass_depend_on_screen_space_ambient_occlusion_pass.dstStageMask =
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        tone_mapping_pass_depend_on_screen_space_ambient_occlusion_pass.srcAccessMask =
+            VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        tone_mapping_pass_depend_on_screen_space_ambient_occlusion_pass.dstAccessMask =
+            VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+        tone_mapping_pass_depend_on_screen_space_ambient_occlusion_pass.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+        VkSubpassDependency& color_grading_pass_depend_on_tone_mapping_pass = dependencies[5];
         color_grading_pass_depend_on_tone_mapping_pass.srcSubpass           = _main_camera_subpass_tone_mapping;
         color_grading_pass_depend_on_tone_mapping_pass.dstSubpass           = _main_camera_subpass_color_grading;
         color_grading_pass_depend_on_tone_mapping_pass.srcStageMask =
@@ -375,7 +440,7 @@ namespace Pilot
             VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
         color_grading_pass_depend_on_tone_mapping_pass.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-        VkSubpassDependency& ui_pass_depend_on_color_grading_pass = dependencies[5];
+        VkSubpassDependency& ui_pass_depend_on_color_grading_pass = dependencies[6];
         ui_pass_depend_on_color_grading_pass.srcSubpass           = _main_camera_subpass_color_grading;
         ui_pass_depend_on_color_grading_pass.dstSubpass           = _main_camera_subpass_ui;
         ui_pass_depend_on_color_grading_pass.srcStageMask =
@@ -388,7 +453,7 @@ namespace Pilot
             VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
         ui_pass_depend_on_color_grading_pass.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-        VkSubpassDependency& combine_ui_pass_depend_on_ui_pass = dependencies[6];
+        VkSubpassDependency& combine_ui_pass_depend_on_ui_pass = dependencies[7];
         combine_ui_pass_depend_on_ui_pass.srcSubpass           = _main_camera_subpass_ui;
         combine_ui_pass_depend_on_ui_pass.dstSubpass           = _main_camera_subpass_combine_ui;
         combine_ui_pass_depend_on_ui_pass.srcStageMask =
@@ -477,30 +542,30 @@ namespace Pilot
                 VK_SHADER_STAGE_VERTEX_BIT;
             mesh_global_layout_per_drawcall_vertex_blending_storage_buffer_binding.pImmutableSamplers = nullptr;
 
-            VkDescriptorSetLayoutBinding& mesh_global_layout_brdfLUT_texture_binding = mesh_global_layout_bindings[3];
-            mesh_global_layout_brdfLUT_texture_binding.binding                       = 3;
-            mesh_global_layout_brdfLUT_texture_binding.descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            mesh_global_layout_brdfLUT_texture_binding.descriptorCount    = 1;
-            mesh_global_layout_brdfLUT_texture_binding.stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT;
-            mesh_global_layout_brdfLUT_texture_binding.pImmutableSamplers = nullptr;
+            VkDescriptorSetLayoutBinding& mesh_global_layout_brdf_lut_texture_binding = mesh_global_layout_bindings[3];
+            mesh_global_layout_brdf_lut_texture_binding.binding                       = 3;
+            mesh_global_layout_brdf_lut_texture_binding.descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            mesh_global_layout_brdf_lut_texture_binding.descriptorCount    = 1;
+            mesh_global_layout_brdf_lut_texture_binding.stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT;
+            mesh_global_layout_brdf_lut_texture_binding.pImmutableSamplers = nullptr;
 
             VkDescriptorSetLayoutBinding& mesh_global_layout_irradiance_texture_binding =
                 mesh_global_layout_bindings[4];
-            mesh_global_layout_irradiance_texture_binding         = mesh_global_layout_brdfLUT_texture_binding;
+            mesh_global_layout_irradiance_texture_binding         = mesh_global_layout_brdf_lut_texture_binding;
             mesh_global_layout_irradiance_texture_binding.binding = 4;
 
             VkDescriptorSetLayoutBinding& mesh_global_layout_specular_texture_binding = mesh_global_layout_bindings[5];
-            mesh_global_layout_specular_texture_binding         = mesh_global_layout_brdfLUT_texture_binding;
+            mesh_global_layout_specular_texture_binding         = mesh_global_layout_brdf_lut_texture_binding;
             mesh_global_layout_specular_texture_binding.binding = 5;
 
             VkDescriptorSetLayoutBinding& mesh_global_layout_point_light_shadow_texture_binding =
                 mesh_global_layout_bindings[6];
-            mesh_global_layout_point_light_shadow_texture_binding         = mesh_global_layout_brdfLUT_texture_binding;
+            mesh_global_layout_point_light_shadow_texture_binding         = mesh_global_layout_brdf_lut_texture_binding;
             mesh_global_layout_point_light_shadow_texture_binding.binding = 6;
 
             VkDescriptorSetLayoutBinding& mesh_global_layout_directional_light_shadow_texture_binding =
                 mesh_global_layout_bindings[7];
-            mesh_global_layout_directional_light_shadow_texture_binding = mesh_global_layout_brdfLUT_texture_binding;
+            mesh_global_layout_directional_light_shadow_texture_binding = mesh_global_layout_brdf_lut_texture_binding;
             mesh_global_layout_directional_light_shadow_texture_binding.binding = 7;
 
             VkDescriptorSetLayoutCreateInfo mesh_global_layout_create_info;
@@ -867,27 +932,27 @@ namespace Pilot
             dynamic_state_create_info.dynamicStateCount = 2;
             dynamic_state_create_info.pDynamicStates    = dynamic_states;
 
-            VkGraphicsPipelineCreateInfo pipelineInfo {};
-            pipelineInfo.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-            pipelineInfo.stageCount          = 2;
-            pipelineInfo.pStages             = shader_stages;
-            pipelineInfo.pVertexInputState   = &vertex_input_state_create_info;
-            pipelineInfo.pInputAssemblyState = &input_assembly_create_info;
-            pipelineInfo.pViewportState      = &viewport_state_create_info;
-            pipelineInfo.pRasterizationState = &rasterization_state_create_info;
-            pipelineInfo.pMultisampleState   = &multisample_state_create_info;
-            pipelineInfo.pColorBlendState    = &color_blend_state_create_info;
-            pipelineInfo.pDepthStencilState  = &depth_stencil_create_info;
-            pipelineInfo.layout              = _render_pipelines[_render_pipeline_type_mesh_gbuffer].layout;
-            pipelineInfo.renderPass          = _framebuffer.render_pass;
-            pipelineInfo.subpass             = _main_camera_subpass_basepass;
-            pipelineInfo.basePipelineHandle  = VK_NULL_HANDLE;
-            pipelineInfo.pDynamicState       = &dynamic_state_create_info;
+            VkGraphicsPipelineCreateInfo pipeline_info {};
+            pipeline_info.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+            pipeline_info.stageCount          = 2;
+            pipeline_info.pStages             = shader_stages;
+            pipeline_info.pVertexInputState   = &vertex_input_state_create_info;
+            pipeline_info.pInputAssemblyState = &input_assembly_create_info;
+            pipeline_info.pViewportState      = &viewport_state_create_info;
+            pipeline_info.pRasterizationState = &rasterization_state_create_info;
+            pipeline_info.pMultisampleState   = &multisample_state_create_info;
+            pipeline_info.pColorBlendState    = &color_blend_state_create_info;
+            pipeline_info.pDepthStencilState  = &depth_stencil_create_info;
+            pipeline_info.layout              = _render_pipelines[_render_pipeline_type_mesh_gbuffer].layout;
+            pipeline_info.renderPass          = _framebuffer.render_pass;
+            pipeline_info.subpass             = _main_camera_subpass_basepass;
+            pipeline_info.basePipelineHandle  = VK_NULL_HANDLE;
+            pipeline_info.pDynamicState       = &dynamic_state_create_info;
 
             if (vkCreateGraphicsPipelines(m_p_vulkan_context->_device,
                                           VK_NULL_HANDLE,
                                           1,
-                                          &pipelineInfo,
+                                          &pipeline_info,
                                           nullptr,
                                           &_render_pipelines[_render_pipeline_type_mesh_gbuffer].pipeline) !=
                 VK_SUCCESS)
@@ -1016,27 +1081,27 @@ namespace Pilot
             dynamic_state_create_info.dynamicStateCount = 2;
             dynamic_state_create_info.pDynamicStates    = dynamic_states;
 
-            VkGraphicsPipelineCreateInfo pipelineInfo {};
-            pipelineInfo.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-            pipelineInfo.stageCount          = 2;
-            pipelineInfo.pStages             = shader_stages;
-            pipelineInfo.pVertexInputState   = &vertex_input_state_create_info;
-            pipelineInfo.pInputAssemblyState = &input_assembly_create_info;
-            pipelineInfo.pViewportState      = &viewport_state_create_info;
-            pipelineInfo.pRasterizationState = &rasterization_state_create_info;
-            pipelineInfo.pMultisampleState   = &multisample_state_create_info;
-            pipelineInfo.pColorBlendState    = &color_blend_state_create_info;
-            pipelineInfo.pDepthStencilState  = &depth_stencil_create_info;
-            pipelineInfo.layout              = _render_pipelines[_render_pipeline_type_deferred_lighting].layout;
-            pipelineInfo.renderPass          = _framebuffer.render_pass;
-            pipelineInfo.subpass             = _main_camera_subpass_deferred_lighting;
-            pipelineInfo.basePipelineHandle  = VK_NULL_HANDLE;
-            pipelineInfo.pDynamicState       = &dynamic_state_create_info;
+            VkGraphicsPipelineCreateInfo pipeline_info {};
+            pipeline_info.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+            pipeline_info.stageCount          = 2;
+            pipeline_info.pStages             = shader_stages;
+            pipeline_info.pVertexInputState   = &vertex_input_state_create_info;
+            pipeline_info.pInputAssemblyState = &input_assembly_create_info;
+            pipeline_info.pViewportState      = &viewport_state_create_info;
+            pipeline_info.pRasterizationState = &rasterization_state_create_info;
+            pipeline_info.pMultisampleState   = &multisample_state_create_info;
+            pipeline_info.pColorBlendState    = &color_blend_state_create_info;
+            pipeline_info.pDepthStencilState  = &depth_stencil_create_info;
+            pipeline_info.layout              = _render_pipelines[_render_pipeline_type_deferred_lighting].layout;
+            pipeline_info.renderPass          = _framebuffer.render_pass;
+            pipeline_info.subpass             = _main_camera_subpass_deferred_lighting;
+            pipeline_info.basePipelineHandle  = VK_NULL_HANDLE;
+            pipeline_info.pDynamicState       = &dynamic_state_create_info;
 
             if (vkCreateGraphicsPipelines(m_p_vulkan_context->_device,
                                           VK_NULL_HANDLE,
                                           1,
-                                          &pipelineInfo,
+                                          &pipeline_info,
                                           nullptr,
                                           &_render_pipelines[_render_pipeline_type_deferred_lighting].pipeline) !=
                 VK_SUCCESS)
@@ -1160,27 +1225,27 @@ namespace Pilot
             dynamic_state_create_info.dynamicStateCount = 2;
             dynamic_state_create_info.pDynamicStates    = dynamic_states;
 
-            VkGraphicsPipelineCreateInfo pipelineInfo {};
-            pipelineInfo.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-            pipelineInfo.stageCount          = 2;
-            pipelineInfo.pStages             = shader_stages;
-            pipelineInfo.pVertexInputState   = &vertex_input_state_create_info;
-            pipelineInfo.pInputAssemblyState = &input_assembly_create_info;
-            pipelineInfo.pViewportState      = &viewport_state_create_info;
-            pipelineInfo.pRasterizationState = &rasterization_state_create_info;
-            pipelineInfo.pMultisampleState   = &multisample_state_create_info;
-            pipelineInfo.pColorBlendState    = &color_blend_state_create_info;
-            pipelineInfo.pDepthStencilState  = &depth_stencil_create_info;
-            pipelineInfo.layout              = _render_pipelines[_render_pipeline_type_mesh_lighting].layout;
-            pipelineInfo.renderPass          = _framebuffer.render_pass;
-            pipelineInfo.subpass             = _main_camera_subpass_forward_lighting;
-            pipelineInfo.basePipelineHandle  = VK_NULL_HANDLE;
-            pipelineInfo.pDynamicState       = &dynamic_state_create_info;
+            VkGraphicsPipelineCreateInfo pipeline_info {};
+            pipeline_info.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+            pipeline_info.stageCount          = 2;
+            pipeline_info.pStages             = shader_stages;
+            pipeline_info.pVertexInputState   = &vertex_input_state_create_info;
+            pipeline_info.pInputAssemblyState = &input_assembly_create_info;
+            pipeline_info.pViewportState      = &viewport_state_create_info;
+            pipeline_info.pRasterizationState = &rasterization_state_create_info;
+            pipeline_info.pMultisampleState   = &multisample_state_create_info;
+            pipeline_info.pColorBlendState    = &color_blend_state_create_info;
+            pipeline_info.pDepthStencilState  = &depth_stencil_create_info;
+            pipeline_info.layout              = _render_pipelines[_render_pipeline_type_mesh_lighting].layout;
+            pipeline_info.renderPass          = _framebuffer.render_pass;
+            pipeline_info.subpass             = _main_camera_subpass_forward_lighting;
+            pipeline_info.basePipelineHandle  = VK_NULL_HANDLE;
+            pipeline_info.pDynamicState       = &dynamic_state_create_info;
 
             if (vkCreateGraphicsPipelines(m_p_vulkan_context->_device,
                                           VK_NULL_HANDLE,
                                           1,
-                                          &pipelineInfo,
+                                          &pipeline_info,
                                           nullptr,
                                           &_render_pipelines[_render_pipeline_type_mesh_lighting].pipeline) !=
                 VK_SUCCESS)
@@ -1305,27 +1370,27 @@ namespace Pilot
             dynamic_state_create_info.dynamicStateCount = 2;
             dynamic_state_create_info.pDynamicStates    = dynamic_states;
 
-            VkGraphicsPipelineCreateInfo pipelineInfo {};
-            pipelineInfo.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-            pipelineInfo.stageCount          = 2;
-            pipelineInfo.pStages             = shader_stages;
-            pipelineInfo.pVertexInputState   = &vertex_input_state_create_info;
-            pipelineInfo.pInputAssemblyState = &input_assembly_create_info;
-            pipelineInfo.pViewportState      = &viewport_state_create_info;
-            pipelineInfo.pRasterizationState = &rasterization_state_create_info;
-            pipelineInfo.pMultisampleState   = &multisample_state_create_info;
-            pipelineInfo.pColorBlendState    = &color_blend_state_create_info;
-            pipelineInfo.pDepthStencilState  = &depth_stencil_create_info;
-            pipelineInfo.layout              = _render_pipelines[_render_pipeline_type_skybox].layout;
-            pipelineInfo.renderPass          = _framebuffer.render_pass;
-            pipelineInfo.subpass             = _main_camera_subpass_forward_lighting;
-            pipelineInfo.basePipelineHandle  = VK_NULL_HANDLE;
-            pipelineInfo.pDynamicState       = &dynamic_state_create_info;
+            VkGraphicsPipelineCreateInfo pipeline_info {};
+            pipeline_info.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+            pipeline_info.stageCount          = 2;
+            pipeline_info.pStages             = shader_stages;
+            pipeline_info.pVertexInputState   = &vertex_input_state_create_info;
+            pipeline_info.pInputAssemblyState = &input_assembly_create_info;
+            pipeline_info.pViewportState      = &viewport_state_create_info;
+            pipeline_info.pRasterizationState = &rasterization_state_create_info;
+            pipeline_info.pMultisampleState   = &multisample_state_create_info;
+            pipeline_info.pColorBlendState    = &color_blend_state_create_info;
+            pipeline_info.pDepthStencilState  = &depth_stencil_create_info;
+            pipeline_info.layout              = _render_pipelines[_render_pipeline_type_skybox].layout;
+            pipeline_info.renderPass          = _framebuffer.render_pass;
+            pipeline_info.subpass             = _main_camera_subpass_forward_lighting;
+            pipeline_info.basePipelineHandle  = VK_NULL_HANDLE;
+            pipeline_info.pDynamicState       = &dynamic_state_create_info;
 
             if (vkCreateGraphicsPipelines(m_p_vulkan_context->_device,
                                           VK_NULL_HANDLE,
                                           1,
-                                          &pipelineInfo,
+                                          &pipeline_info,
                                           nullptr,
                                           &_render_pipelines[_render_pipeline_type_skybox].pipeline) != VK_SUCCESS)
             {
@@ -1447,27 +1512,27 @@ namespace Pilot
             dynamic_state_create_info.dynamicStateCount = 2;
             dynamic_state_create_info.pDynamicStates    = dynamic_states;
 
-            VkGraphicsPipelineCreateInfo pipelineInfo {};
-            pipelineInfo.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-            pipelineInfo.stageCount          = 2;
-            pipelineInfo.pStages             = shader_stages;
-            pipelineInfo.pVertexInputState   = &vertex_input_state_create_info;
-            pipelineInfo.pInputAssemblyState = &input_assembly_create_info;
-            pipelineInfo.pViewportState      = &viewport_state_create_info;
-            pipelineInfo.pRasterizationState = &rasterization_state_create_info;
-            pipelineInfo.pMultisampleState   = &multisample_state_create_info;
-            pipelineInfo.pColorBlendState    = &color_blend_state_create_info;
-            pipelineInfo.pDepthStencilState  = &depth_stencil_create_info;
-            pipelineInfo.layout              = _render_pipelines[_render_pipeline_type_particle].layout;
-            pipelineInfo.renderPass          = _framebuffer.render_pass;
-            pipelineInfo.subpass             = _main_camera_subpass_forward_lighting;
-            pipelineInfo.basePipelineHandle  = VK_NULL_HANDLE;
-            pipelineInfo.pDynamicState       = &dynamic_state_create_info;
+            VkGraphicsPipelineCreateInfo pipeline_info {};
+            pipeline_info.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+            pipeline_info.stageCount          = 2;
+            pipeline_info.pStages             = shader_stages;
+            pipeline_info.pVertexInputState   = &vertex_input_state_create_info;
+            pipeline_info.pInputAssemblyState = &input_assembly_create_info;
+            pipeline_info.pViewportState      = &viewport_state_create_info;
+            pipeline_info.pRasterizationState = &rasterization_state_create_info;
+            pipeline_info.pMultisampleState   = &multisample_state_create_info;
+            pipeline_info.pColorBlendState    = &color_blend_state_create_info;
+            pipeline_info.pDepthStencilState  = &depth_stencil_create_info;
+            pipeline_info.layout              = _render_pipelines[_render_pipeline_type_particle].layout;
+            pipeline_info.renderPass          = _framebuffer.render_pass;
+            pipeline_info.subpass             = _main_camera_subpass_forward_lighting;
+            pipeline_info.basePipelineHandle  = VK_NULL_HANDLE;
+            pipeline_info.pDynamicState       = &dynamic_state_create_info;
 
             if (vkCreateGraphicsPipelines(m_p_vulkan_context->_device,
                                           VK_NULL_HANDLE,
                                           1,
-                                          &pipelineInfo,
+                                          &pipeline_info,
                                           nullptr,
                                           &_render_pipelines[_render_pipeline_type_particle].pipeline) != VK_SUCCESS)
             {
@@ -1588,27 +1653,27 @@ namespace Pilot
             dynamic_state_create_info.dynamicStateCount = 2;
             dynamic_state_create_info.pDynamicStates    = dynamic_states;
 
-            VkGraphicsPipelineCreateInfo pipelineInfo {};
-            pipelineInfo.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-            pipelineInfo.stageCount          = 2;
-            pipelineInfo.pStages             = shader_stages;
-            pipelineInfo.pVertexInputState   = &vertex_input_state_create_info;
-            pipelineInfo.pInputAssemblyState = &input_assembly_create_info;
-            pipelineInfo.pViewportState      = &viewport_state_create_info;
-            pipelineInfo.pRasterizationState = &rasterization_state_create_info;
-            pipelineInfo.pMultisampleState   = &multisample_state_create_info;
-            pipelineInfo.pColorBlendState    = &color_blend_state_create_info;
-            pipelineInfo.pDepthStencilState  = &depth_stencil_create_info;
-            pipelineInfo.layout              = _render_pipelines[_render_pipeline_type_axis].layout;
-            pipelineInfo.renderPass          = _framebuffer.render_pass;
-            pipelineInfo.subpass             = _main_camera_subpass_ui;
-            pipelineInfo.basePipelineHandle  = VK_NULL_HANDLE;
-            pipelineInfo.pDynamicState       = &dynamic_state_create_info;
+            VkGraphicsPipelineCreateInfo pipeline_info {};
+            pipeline_info.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+            pipeline_info.stageCount          = 2;
+            pipeline_info.pStages             = shader_stages;
+            pipeline_info.pVertexInputState   = &vertex_input_state_create_info;
+            pipeline_info.pInputAssemblyState = &input_assembly_create_info;
+            pipeline_info.pViewportState      = &viewport_state_create_info;
+            pipeline_info.pRasterizationState = &rasterization_state_create_info;
+            pipeline_info.pMultisampleState   = &multisample_state_create_info;
+            pipeline_info.pColorBlendState    = &color_blend_state_create_info;
+            pipeline_info.pDepthStencilState  = &depth_stencil_create_info;
+            pipeline_info.layout              = _render_pipelines[_render_pipeline_type_axis].layout;
+            pipeline_info.renderPass          = _framebuffer.render_pass;
+            pipeline_info.subpass             = _main_camera_subpass_ui;
+            pipeline_info.basePipelineHandle  = VK_NULL_HANDLE;
+            pipeline_info.pDynamicState       = &dynamic_state_create_info;
 
             if (vkCreateGraphicsPipelines(m_p_vulkan_context->_device,
                                           VK_NULL_HANDLE,
                                           1,
-                                          &pipelineInfo,
+                                          &pipeline_info,
                                           nullptr,
                                           &_render_pipelines[_render_pipeline_type_axis].pipeline) != VK_SUCCESS)
             {
@@ -1863,11 +1928,12 @@ namespace Pilot
         axis_descriptor_writes_info[1].descriptorCount = 1;
         axis_descriptor_writes_info[1].pBufferInfo     = &axis_storage_buffer_info;
 
-        vkUpdateDescriptorSets(m_p_vulkan_context->_device,
-                               (uint32_t)(sizeof(axis_descriptor_writes_info) / sizeof(axis_descriptor_writes_info[0])),
-                               axis_descriptor_writes_info,
-                               0,
-                               nullptr);
+        vkUpdateDescriptorSets(
+            m_p_vulkan_context->_device,
+            static_cast<uint32_t>(sizeof(axis_descriptor_writes_info) / sizeof(axis_descriptor_writes_info[0])),
+            axis_descriptor_writes_info,
+            0,
+            nullptr);
     }
 
     void PMainCameraPass::setupParticleDescriptorSet()
@@ -2067,14 +2133,14 @@ namespace Pilot
 
     void PMainCameraPass::updateAfterFramebufferRecreate()
     {
-        for (size_t i = 0; i < _framebuffer.attachments.size(); i++)
+        for (auto& attachment : _framebuffer.attachments)
         {
-            vkDestroyImage(m_p_vulkan_context->_device, _framebuffer.attachments[i].image, nullptr);
-            vkDestroyImageView(m_p_vulkan_context->_device, _framebuffer.attachments[i].view, nullptr);
-            vkFreeMemory(m_p_vulkan_context->_device, _framebuffer.attachments[i].mem, nullptr);
+            vkDestroyImage(m_p_vulkan_context->_device, attachment.image, nullptr);
+            vkDestroyImageView(m_p_vulkan_context->_device, attachment.view, nullptr);
+            vkFreeMemory(m_p_vulkan_context->_device, attachment.mem, nullptr);
         }
 
-        for (auto framebuffer : m_swapchain_framebuffers)
+        for (auto* framebuffer : m_swapchain_framebuffers)
         {
             vkDestroyFramebuffer(m_p_vulkan_context->_device, framebuffer, nullptr);
         }
@@ -2086,12 +2152,13 @@ namespace Pilot
         setupSwapchainFramebuffers();
     }
 
-    void PMainCameraPass::draw(PColorGradingPass& color_grading_pass,
-                               PToneMappingPass&  tone_mapping_pass,
-                               PUIPass&           ui_pass,
-                               PCombineUIPass&    combine_ui_pass,
-                               uint32_t           current_swapchain_image_index,
-                               void*              ui_state)
+    void PMainCameraPass::draw(PScreenSpaceAmbientOcclusionPass& screen_space_ambient_occlusion_pass,
+                               PToneMappingPass&                 tone_mapping_pass,
+                               PColorGradingPass&                color_grading_pass,
+                               PUIPass&                          ui_pass,
+                               PCombineUIPass&                   combine_ui_pass,
+                               uint32_t                          current_swapchain_image_index,
+                               void*                             ui_state)
     {
         {
             VkRenderPassBeginInfo renderpass_begin_info {};
@@ -2161,6 +2228,10 @@ namespace Pilot
         {
             m_p_vulkan_context->_vkCmdEndDebugUtilsLabelEXT(m_command_info._current_command_buffer);
         }
+
+        m_p_vulkan_context->_vkCmdNextSubpass(m_command_info._current_command_buffer, VK_SUBPASS_CONTENTS_INLINE);
+
+        screen_space_ambient_occlusion_pass.draw();
 
         m_p_vulkan_context->_vkCmdNextSubpass(m_command_info._current_command_buffer, VK_SUBPASS_CONTENTS_INLINE);
 

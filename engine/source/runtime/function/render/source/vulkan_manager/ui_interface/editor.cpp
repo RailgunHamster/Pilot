@@ -42,7 +42,7 @@ namespace Pilot
                                               Vector3 camera_position)
     {
         m_selected_axis = 3;
-        if (m_axis_node.ref_mesh == NULL)
+        if (m_axis_node.ref_mesh == nullptr)
         {
             return m_selected_axis;
         }

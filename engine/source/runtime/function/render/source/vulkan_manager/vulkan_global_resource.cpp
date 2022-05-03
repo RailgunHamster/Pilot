@@ -25,7 +25,7 @@ Pilot::PIBLResourceData Pilot::PGlobalRenderResource::getIBLTextureData(Scene* s
     uint32_t           brdfLUT_texture_image_width  = 1;
     uint32_t           brdfLUT_texture_image_height = 1;
     PILOT_PIXEL_FORMAT brdfLUT_texture_image_format = PILOT_PIXEL_FORMAT::PILOT_PIXEL_FORMAT_R32G32B32_FLOAT;
-    if (brdfLUT_texture_image != NULL)
+    if (brdfLUT_texture_image != nullptr)
     {
         brdfLUT_texture_image_pixels = brdfLUT_texture_image->m_pixels;
         brdfLUT_texture_image_width  = static_cast<uint32_t>(brdfLUT_texture_image->m_width);
@@ -46,7 +46,7 @@ Pilot::PIBLResourceData Pilot::PGlobalRenderResource::getIBLTextureData(Scene* s
         TextureHandle     irradiance_texture_handle = scene->m_irradiance_texture_handle[i];
         const SceneImage* irradiance_texture_image  = renderer->f_get_image(irradiance_texture_handle);
         irradiance_texture_image_pixels[i]          = empty_image;
-        if (irradiance_texture_image != NULL)
+        if (irradiance_texture_image != nullptr)
         {
             irradiance_texture_image_pixels[i] = irradiance_texture_image->m_pixels;
             irradiance_texture_image_width     = static_cast<uint32_t>(irradiance_texture_image->m_width);
@@ -57,7 +57,7 @@ Pilot::PIBLResourceData Pilot::PGlobalRenderResource::getIBLTextureData(Scene* s
         TextureHandle     specular_texture_handle = scene->m_specular_texture_handle[i];
         const SceneImage* specular_texture_image  = renderer->f_get_image(specular_texture_handle);
         specular_texture_image_pixels[i]          = empty_image;
-        if (specular_texture_image != NULL)
+        if (specular_texture_image != nullptr)
         {
             specular_texture_image_pixels[i] = specular_texture_image->m_pixels;
             specular_texture_image_width     = static_cast<uint32_t>(specular_texture_image->m_width);
@@ -106,7 +106,7 @@ Pilot::PColorGradingResourceData Pilot::PGlobalRenderResource::getColorGradingTe
     uint32_t           color_grading_LUT_texture_image_width  = 1;
     uint32_t           color_grading_LUT_texture_image_height = 1;
     PILOT_PIXEL_FORMAT color_grading_LUT_texture_image_format = PILOT_PIXEL_FORMAT::PILOT_PIXEL_FORMAT_R32G32B32_FLOAT;
-    if (color_grading_LUT_texture_image != NULL)
+    if (color_grading_LUT_texture_image != nullptr)
     {
         color_grading_LUT_texture_image_pixels = color_grading_LUT_texture_image->m_pixels;
         color_grading_LUT_texture_image_width  = static_cast<uint32_t>(color_grading_LUT_texture_image->m_width);

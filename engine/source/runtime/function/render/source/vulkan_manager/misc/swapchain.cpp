@@ -23,9 +23,14 @@ bool Pilot::PVulkanManager::recreateSwapChain()
     m_vulkan_context.createFramebufferImageAndView();
 
     m_main_camera_pass.updateAfterFramebufferRecreate();
-    m_tone_mapping_pass.updateAfterFramebufferRecreate(m_main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd]);
-    m_color_grading_pass.updateAfterFramebufferRecreate(m_main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even]);
-    m_combine_ui_pass.updateAfterFramebufferRecreate(m_main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd], m_main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even]);
+    m_screen_space_ambient_occlusion_pass.updateAfterFramebufferRecreate(m_main_camera_pass.getFramebufferImageViews());
+    m_tone_mapping_pass.updateAfterFramebufferRecreate(
+        m_main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even]);
+    m_color_grading_pass.updateAfterFramebufferRecreate(
+        m_main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd]);
+    m_combine_ui_pass.updateAfterFramebufferRecreate(
+        m_main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even],
+        m_main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd]);
     m_mouse_pick_pass.recreateFramebuffer();
 
     return true;

@@ -5,7 +5,7 @@ bool Pilot::PVulkanManager::initializeCommandPool()
 {
     VkCommandPoolCreateInfo command_pool_create_info;
     command_pool_create_info.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    command_pool_create_info.pNext            = NULL;
+    command_pool_create_info.pNext            = nullptr;
     command_pool_create_info.flags            = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
     command_pool_create_info.queueFamilyIndex = m_vulkan_context._queue_indices.graphicsFamily.value();
 
