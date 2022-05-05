@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vulkan/vulkan_core.h"
 #ifndef GLM_FORCE_RADIANS
 #define GLM_FORCE_RADIANS 1
 #endif
@@ -28,7 +29,8 @@ namespace Pilot
                                            VkBufferUsageFlags    usage,
                                            VkMemoryPropertyFlags properties,
                                            VkBuffer&             buffer,
-                                           VkDeviceMemory&       buffer_memory);
+                                           VkDeviceMemory&       buffer_memory,
+                                           void*                 data = nullptr);
         static void           copyBuffer(class PVulkanContext* context,
                                          VkBuffer              srcBuffer,
                                          VkBuffer              dstBuffer,
@@ -73,6 +75,24 @@ namespace Pilot
                                                 uint32_t              width,
                                                 uint32_t              height,
                                                 uint32_t              mip_levels);
+        static void           bufferToImage(VkImage*              image,
+                                            VkDeviceMemory*       memory,
+                                            VkImageView*          view,
+                                            class PVulkanContext* context,
+                                            void*                 buffer,
+                                            VkDeviceSize          buffer_size,
+                                            VkFormat              format,
+                                            uint32_t              width,
+                                            uint32_t              height,
+                                            VkImageUsageFlags     usage,
+                                            VkImageLayout         layout);
+        static void           setImageLayout(VkCommandBuffer         cmdbuffer,
+                                             VkImage                 image,
+                                             VkImageLayout           oldImageLayout,
+                                             VkImageLayout           newImageLayout,
+                                             VkImageSubresourceRange subresourceRange,
+                                             VkPipelineStageFlags    srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                                             VkPipelineStageFlags    dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 
         static VkSampler
         getOrCreateMipmapSampler(VkPhysicalDevice physical_device, VkDevice device, uint32_t width, uint32_t height);

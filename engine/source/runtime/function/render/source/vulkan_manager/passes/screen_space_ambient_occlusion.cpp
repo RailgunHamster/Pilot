@@ -1,3 +1,4 @@
+#include "glm/geometric.hpp"
 #include "runtime/function/render/include/render/vulkan_manager/vulkan_common.h"
 #include "runtime/function/render/include/render/vulkan_manager/vulkan_mesh.h"
 #include "runtime/function/render/include/render/vulkan_manager/vulkan_misc.h"
@@ -6,51 +7,123 @@
 
 #include "vulkan/vulkan_core.h"
 #include <post_process_vert.h>
+#include <random>
 #include <screen_space_ambient_occlusion_frag.h>
+#include <vector>
 
 namespace Pilot
 {
+    static constexpr uint32_t SSAO_NOISE_DIM   = 4;
+    static constexpr uint32_t SSAO_KERNEL_SIZE = 64;
+    static constexpr float    SSAO_RADIUS      = 0.3f;
+
     void PScreenSpaceAmbientOcclusionPass::initialize(VkRenderPass                    render_pass,
                                                       const std::vector<VkImageView>& input_attachments)
     {
         _framebuffer.render_pass = render_pass;
+        setupAttachments();
         setupDescriptorSetLayout();
         setupPipelines();
         setupDescriptorSet();
         updateAfterFramebufferRecreate(input_attachments);
     }
 
+    void PScreenSpaceAmbientOcclusionPass::setupAttachments()
+    {
+        std::mt19937                          rand_engine(time(nullptr));
+        std::uniform_real_distribution<float> rand_dist(0.0, 1.0);
+
+        // noise
+        std::vector<glm::vec4> noise(SSAO_NOISE_DIM * SSAO_NOISE_DIM);
+        for (auto& n : noise)
+        {
+            const float x = rand_dist(rand_engine) * 2.0 - 1.0;
+            const float y = rand_dist(rand_engine) * 2.0 - 1.0;
+            n             = glm::vec4(x, y, 0.0, 0.0);
+        }
+        _framebuffer.attachments.resize(_custom_screen_space_ambient_occlusion_image_count);
+        auto& noise_attachment  = _framebuffer.attachments[_custom_screen_space_ambient_occlusion_noise];
+        noise_attachment.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        PVulkanUtil::bufferToImage(&noise_attachment.image,
+                                   &noise_attachment.mem,
+                                   &noise_attachment.view,
+                                   m_p_vulkan_context,
+                                   noise.data(),
+                                   noise.size() * sizeof(glm::vec4),
+                                   noise_attachment.format,
+                                   SSAO_NOISE_DIM,
+                                   SSAO_NOISE_DIM,
+                                   VK_IMAGE_USAGE_SAMPLED_BIT,
+                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+        // kernel
+        std::vector<glm::vec4> kernel(SSAO_KERNEL_SIZE);
+        for (uint32_t i = 0; i < SSAO_KERNEL_SIZE; ++i)
+        {
+            const float x      = rand_dist(rand_engine) * 2.0 - 1.0;
+            const float y      = rand_dist(rand_engine) * 2.0 - 1.0;
+            const float z      = rand_dist(rand_engine);
+            const auto  sample = glm::normalize(glm::vec3(x, y, z)) * rand_dist(rand_engine);
+            float       scale  = static_cast<float>(i) / SSAO_KERNEL_SIZE;
+            scale              = lerp(0.1, 1.0, scale * scale);
+            kernel[i]          = glm::vec4(sample * scale, 1.0);
+        }
+        PVulkanUtil::createBuffer(m_p_vulkan_context->_physical_device,
+                                  m_p_vulkan_context->_device,
+                                  kernel.size() * sizeof(glm::vec4),
+                                  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                  kernel_buffer,
+                                  kernel_memory,
+                                  kernel.data());
+    }
+
     void PScreenSpaceAmbientOcclusionPass::setupDescriptorSetLayout()
     {
         _descriptor_infos.resize(1);
 
-        VkDescriptorSetLayoutBinding post_process_global_layout_bindings[5] = {};
+        VkDescriptorSetLayoutBinding post_process_global_layout_bindings[8] = {};
 
         VkDescriptorSetLayoutBinding& gbuffer_a = post_process_global_layout_bindings[0];
         gbuffer_a.binding                       = 0;
-        gbuffer_a.descriptorType                = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        gbuffer_a.descriptorType                = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         gbuffer_a.descriptorCount               = 1;
         gbuffer_a.stageFlags                    = VK_SHADER_STAGE_FRAGMENT_BIT;
         VkDescriptorSetLayoutBinding& gbuffer_b = post_process_global_layout_bindings[1];
         gbuffer_b.binding                       = 1;
-        gbuffer_b.descriptorType                = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        gbuffer_b.descriptorType                = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         gbuffer_b.descriptorCount               = 1;
         gbuffer_b.stageFlags                    = VK_SHADER_STAGE_FRAGMENT_BIT;
         VkDescriptorSetLayoutBinding& gbuffer_c = post_process_global_layout_bindings[2];
         gbuffer_c.binding                       = 2;
-        gbuffer_c.descriptorType                = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        gbuffer_c.descriptorType                = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         gbuffer_c.descriptorCount               = 1;
         gbuffer_c.stageFlags                    = VK_SHADER_STAGE_FRAGMENT_BIT;
-        VkDescriptorSetLayoutBinding& depth     = post_process_global_layout_bindings[3];
-        depth.binding                           = 3;
-        depth.descriptorType                    = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        VkDescriptorSetLayoutBinding& gbuffer_d = post_process_global_layout_bindings[3];
+        gbuffer_d.binding                       = 3;
+        gbuffer_d.descriptorType                = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        gbuffer_d.descriptorCount               = 1;
+        gbuffer_d.stageFlags                    = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding& depth     = post_process_global_layout_bindings[4];
+        depth.binding                           = 4;
+        depth.descriptorType                    = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         depth.descriptorCount                   = 1;
         depth.stageFlags                        = VK_SHADER_STAGE_FRAGMENT_BIT;
-        VkDescriptorSetLayoutBinding& deferred  = post_process_global_layout_bindings[4];
-        deferred.binding                        = 4;
+        VkDescriptorSetLayoutBinding& deferred  = post_process_global_layout_bindings[5];
+        deferred.binding                        = 5;
         deferred.descriptorType                 = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
         deferred.descriptorCount                = 1;
         deferred.stageFlags                     = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding& noise     = post_process_global_layout_bindings[6];
+        noise.binding                           = 6;
+        noise.descriptorType                    = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        noise.descriptorCount                   = 1;
+        noise.stageFlags                        = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding& kernel    = post_process_global_layout_bindings[7];
+        kernel.binding                          = 7;
+        kernel.descriptorType                   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        kernel.descriptorCount                  = 1;
+        kernel.stageFlags                       = VK_SHADER_STAGE_FRAGMENT_BIT;
 
         VkDescriptorSetLayoutCreateInfo post_process_global_layout_create_info;
         post_process_global_layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -249,11 +322,17 @@ namespace Pilot
         post_process_per_frame_gbuffer_c_attachment_info.imageView   = input_attachments[_main_camera_pass_gbuffer_c];
         post_process_per_frame_gbuffer_c_attachment_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+        VkDescriptorImageInfo post_process_per_frame_gbuffer_d_attachment_info = {};
+        post_process_per_frame_gbuffer_d_attachment_info.sampler =
+            PVulkanUtil::getOrCreateNearestSampler(m_p_vulkan_context->_physical_device, m_p_vulkan_context->_device);
+        post_process_per_frame_gbuffer_d_attachment_info.imageView   = input_attachments[_main_camera_pass_gbuffer_d];
+        post_process_per_frame_gbuffer_d_attachment_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
         VkDescriptorImageInfo depth_input_attachment_info = {};
         depth_input_attachment_info.sampler =
             PVulkanUtil::getOrCreateNearestSampler(m_p_vulkan_context->_physical_device, m_p_vulkan_context->_device);
         depth_input_attachment_info.imageView   = m_p_vulkan_context->_depth_image_view;
-        depth_input_attachment_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        depth_input_attachment_info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 
         VkDescriptorImageInfo color_attachment_info = {};
         color_attachment_info.sampler =
@@ -261,7 +340,18 @@ namespace Pilot
         color_attachment_info.imageView   = input_attachments[_main_camera_pass_backup_buffer_odd];
         color_attachment_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-        VkWriteDescriptorSet post_process_descriptor_writes_info[5];
+        VkDescriptorImageInfo noise_attachment_info = {};
+        noise_attachment_info.sampler =
+            PVulkanUtil::getOrCreateNearestSampler(m_p_vulkan_context->_physical_device, m_p_vulkan_context->_device);
+        noise_attachment_info.imageView   = _framebuffer.attachments[_custom_screen_space_ambient_occlusion_noise].view;
+        noise_attachment_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        VkDescriptorBufferInfo kernel_attachment_info = {};
+        kernel_attachment_info.buffer                 = kernel_buffer;
+        kernel_attachment_info.offset                 = 0;
+        kernel_attachment_info.range                  = -1;
+
+        VkWriteDescriptorSet post_process_descriptor_writes_info[8];
 
         VkWriteDescriptorSet& post_process_descriptor_gbuffer_a_attachment_write_info =
             post_process_descriptor_writes_info[0];
@@ -270,7 +360,8 @@ namespace Pilot
         post_process_descriptor_gbuffer_a_attachment_write_info.dstSet     = _descriptor_infos[0].descriptor_set;
         post_process_descriptor_gbuffer_a_attachment_write_info.dstBinding = 0;
         post_process_descriptor_gbuffer_a_attachment_write_info.dstArrayElement = 0;
-        post_process_descriptor_gbuffer_a_attachment_write_info.descriptorType  = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        post_process_descriptor_gbuffer_a_attachment_write_info.descriptorType =
+            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         post_process_descriptor_gbuffer_a_attachment_write_info.descriptorCount = 1;
         post_process_descriptor_gbuffer_a_attachment_write_info.pImageInfo =
             &post_process_per_frame_gbuffer_a_attachment_info;
@@ -282,7 +373,8 @@ namespace Pilot
         post_process_descriptor_gbuffer_b_attachment_write_info.dstSet     = _descriptor_infos[0].descriptor_set;
         post_process_descriptor_gbuffer_b_attachment_write_info.dstBinding = 1;
         post_process_descriptor_gbuffer_b_attachment_write_info.dstArrayElement = 0;
-        post_process_descriptor_gbuffer_b_attachment_write_info.descriptorType  = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        post_process_descriptor_gbuffer_b_attachment_write_info.descriptorType =
+            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         post_process_descriptor_gbuffer_b_attachment_write_info.descriptorCount = 1;
         post_process_descriptor_gbuffer_b_attachment_write_info.pImageInfo =
             &post_process_per_frame_gbuffer_b_attachment_info;
@@ -294,30 +386,64 @@ namespace Pilot
         post_process_descriptor_gbuffer_c_attachment_write_info.dstSet     = _descriptor_infos[0].descriptor_set;
         post_process_descriptor_gbuffer_c_attachment_write_info.dstBinding = 2;
         post_process_descriptor_gbuffer_c_attachment_write_info.dstArrayElement = 0;
-        post_process_descriptor_gbuffer_c_attachment_write_info.descriptorType  = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        post_process_descriptor_gbuffer_c_attachment_write_info.descriptorType =
+            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         post_process_descriptor_gbuffer_c_attachment_write_info.descriptorCount = 1;
         post_process_descriptor_gbuffer_c_attachment_write_info.pImageInfo =
             &post_process_per_frame_gbuffer_c_attachment_info;
 
-        VkWriteDescriptorSet& depth_descriptor_input_attachment_write_info = post_process_descriptor_writes_info[3];
+        VkWriteDescriptorSet& post_process_descriptor_gbuffer_d_attachment_write_info =
+            post_process_descriptor_writes_info[3];
+        post_process_descriptor_gbuffer_d_attachment_write_info.sType      = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        post_process_descriptor_gbuffer_d_attachment_write_info.pNext      = nullptr;
+        post_process_descriptor_gbuffer_d_attachment_write_info.dstSet     = _descriptor_infos[0].descriptor_set;
+        post_process_descriptor_gbuffer_d_attachment_write_info.dstBinding = 3;
+        post_process_descriptor_gbuffer_d_attachment_write_info.dstArrayElement = 0;
+        post_process_descriptor_gbuffer_d_attachment_write_info.descriptorType =
+            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        post_process_descriptor_gbuffer_d_attachment_write_info.descriptorCount = 1;
+        post_process_descriptor_gbuffer_d_attachment_write_info.pImageInfo =
+            &post_process_per_frame_gbuffer_d_attachment_info;
+
+        VkWriteDescriptorSet& depth_descriptor_input_attachment_write_info = post_process_descriptor_writes_info[4];
         depth_descriptor_input_attachment_write_info.sType                 = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         depth_descriptor_input_attachment_write_info.pNext                 = nullptr;
         depth_descriptor_input_attachment_write_info.dstSet                = _descriptor_infos[0].descriptor_set;
-        depth_descriptor_input_attachment_write_info.dstBinding            = 3;
+        depth_descriptor_input_attachment_write_info.dstBinding            = 4;
         depth_descriptor_input_attachment_write_info.dstArrayElement       = 0;
-        depth_descriptor_input_attachment_write_info.descriptorType        = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        depth_descriptor_input_attachment_write_info.descriptorType        = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         depth_descriptor_input_attachment_write_info.descriptorCount       = 1;
         depth_descriptor_input_attachment_write_info.pImageInfo            = &depth_input_attachment_info;
 
-        VkWriteDescriptorSet& color_input_attachment_write_info = post_process_descriptor_writes_info[4];
+        VkWriteDescriptorSet& color_input_attachment_write_info = post_process_descriptor_writes_info[5];
         color_input_attachment_write_info.sType                 = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         color_input_attachment_write_info.pNext                 = nullptr;
         color_input_attachment_write_info.dstSet                = _descriptor_infos[0].descriptor_set;
-        color_input_attachment_write_info.dstBinding            = 4;
+        color_input_attachment_write_info.dstBinding            = 5;
         color_input_attachment_write_info.dstArrayElement       = 0;
         color_input_attachment_write_info.descriptorType        = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
         color_input_attachment_write_info.descriptorCount       = 1;
         color_input_attachment_write_info.pImageInfo            = &color_attachment_info;
+
+        VkWriteDescriptorSet& noise_input_attachment_write_info = post_process_descriptor_writes_info[6];
+        noise_input_attachment_write_info.sType                 = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        noise_input_attachment_write_info.pNext                 = nullptr;
+        noise_input_attachment_write_info.dstSet                = _descriptor_infos[0].descriptor_set;
+        noise_input_attachment_write_info.dstBinding            = 6;
+        noise_input_attachment_write_info.dstArrayElement       = 0;
+        noise_input_attachment_write_info.descriptorType        = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        noise_input_attachment_write_info.descriptorCount       = 1;
+        noise_input_attachment_write_info.pImageInfo            = &noise_attachment_info;
+
+        VkWriteDescriptorSet& kernel_input_attachment_write_info = post_process_descriptor_writes_info[7];
+        kernel_input_attachment_write_info.sType                 = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        kernel_input_attachment_write_info.pNext                 = nullptr;
+        kernel_input_attachment_write_info.dstSet                = _descriptor_infos[0].descriptor_set;
+        kernel_input_attachment_write_info.dstBinding            = 7;
+        kernel_input_attachment_write_info.dstArrayElement       = 0;
+        kernel_input_attachment_write_info.descriptorType        = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        kernel_input_attachment_write_info.descriptorCount       = 1;
+        kernel_input_attachment_write_info.pBufferInfo           = &kernel_attachment_info;
 
         vkUpdateDescriptorSets(m_p_vulkan_context->_device,
                                sizeof(post_process_descriptor_writes_info) /

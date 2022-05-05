@@ -33,7 +33,7 @@ layout(location = 3) in highp vec2 in_texcoord;
 layout(location = 0) out highp vec4 out_gbuffer_a;
 layout(location = 1) out highp vec4 out_gbuffer_b;
 layout(location = 2) out highp vec4 out_gbuffer_c;
-// layout(location = 3) out highp vec4 out_scene_color;
+layout(location = 3) out highp vec4 out_gbuffer_d;
 
 highp vec3 getBasecolor()
 {
@@ -62,10 +62,9 @@ void main()
     gbuffer.specular       = 0.5;
     gbuffer.roughness      = texture(metallic_roughness_texture_sampler, in_texcoord).y * roughnessFactor;
     gbuffer.shadingModelID = SHADINGMODELID_DEFAULT_LIT;
+    gbuffer.worldPos       = vec4(in_world_position, 1.0);
 
     highp vec3 Le = texture(emissive_color_texture_sampler, in_texcoord).xyz * emissiveFactor;
 
-    EncodeGBufferData(gbuffer, out_gbuffer_a, out_gbuffer_b, out_gbuffer_c);
-
-    // out_scene_color.rgba = vec4(Le, 1.0);
+    EncodeGBufferData(gbuffer, out_gbuffer_a, out_gbuffer_b, out_gbuffer_c, out_gbuffer_d);
 }

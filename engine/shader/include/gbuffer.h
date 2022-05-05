@@ -6,6 +6,7 @@ struct PGBufferData
     highp float specular;
     highp float roughness;
     highp uint  shadingModelID;
+    highp vec4  worldPos;
 };
 
 #define SHADINGMODELID_UNLIT 0U
@@ -38,7 +39,8 @@ highp uint DecodeShadingModelId(highp float InPackedChannel) { return uint(round
 void EncodeGBufferData(PGBufferData   InGBuffer,
                        out highp vec4 OutGBufferA,
                        out highp vec4 OutGBufferB,
-                       out highp vec4 OutGBufferC)
+                       out highp vec4 OutGBufferC,
+                       out highp vec4 OutGBufferD)
 {
     OutGBufferA.rgb = EncodeNormal(InGBuffer.worldNormal);
 
@@ -48,9 +50,15 @@ void EncodeGBufferData(PGBufferData   InGBuffer,
     OutGBufferB.a = EncodeShadingModelId(InGBuffer.shadingModelID);
 
     OutGBufferC.rgb = EncodeBaseColor(InGBuffer.baseColor);
+
+    OutGBufferD.rgba = InGBuffer.worldPos;
 }
 
-void DecodeGBufferData(out PGBufferData OutGBuffer, highp vec4 InGBufferA, highp vec4 InGBufferB, highp vec4 InGBufferC)
+void DecodeGBufferData(out PGBufferData OutGBuffer,
+                       highp vec4       InGBufferA,
+                       highp vec4       InGBufferB,
+                       highp vec4       InGBufferC,
+                       highp vec4       InGBufferD)
 {
     OutGBuffer.worldNormal = DecodeNormal(InGBufferA.xyz);
 
@@ -60,4 +68,6 @@ void DecodeGBufferData(out PGBufferData OutGBuffer, highp vec4 InGBufferA, highp
     OutGBuffer.shadingModelID = DecodeShadingModelId(InGBufferB.a);
 
     OutGBuffer.baseColor = DecodeBaseColor(InGBufferC.rgb);
+
+    OutGBuffer.worldPos = InGBufferD.rgba;
 }

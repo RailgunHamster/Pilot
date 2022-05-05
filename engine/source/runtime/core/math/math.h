@@ -255,8 +255,9 @@ namespace Pilot
             return std::min({A, B, C});
         }
 
-        static Matrix4x4
-        makeViewMatrix(const Vector3& position, const Quaternion& orientation, const Matrix4x4* reflect_matrix = nullptr);
+        static Matrix4x4 makeViewMatrix(const Vector3&    position,
+                                        const Quaternion& orientation,
+                                        const Matrix4x4*  reflect_matrix = nullptr);
 
         static Matrix4x4
         makeLookAtMatrix(const Vector3& eye_position, const Vector3& target_position, const Vector3& up_dir);
@@ -307,4 +308,6 @@ namespace Pilot
     inline Degree operator*(float a, const Degree& b) { return Degree(a * b.valueDegrees()); }
 
     inline Degree operator/(float a, const Degree& b) { return Degree(a / b.valueDegrees()); }
+
+    inline float lerp(float a, float b, float f) { return a + f * (b - a); }
 } // namespace Pilot

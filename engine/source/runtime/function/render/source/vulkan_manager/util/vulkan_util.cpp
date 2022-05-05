@@ -1,12 +1,15 @@
 #include "runtime/function/render/include/render/vulkan_manager/vulkan_util.h"
+#include "render/vulkan_manager/vulkan_render_pass.h"
 #include "runtime/function/render/include/render/vulkan_manager/vulkan_context.h"
 
+#include "vulkan/vulkan_core.h"
 #include <algorithm>
+#include <cstring>
 #include <stdexcept>
 
 std::unordered_map<uint32_t, VkSampler> Pilot::PVulkanUtil::m_mipmap_sampler_map;
 VkSampler                               Pilot::PVulkanUtil::m_nearest_sampler = VK_NULL_HANDLE;
-VkSampler                               Pilot::PVulkanUtil::m_linear_sampler = VK_NULL_HANDLE;
+VkSampler                               Pilot::PVulkanUtil::m_linear_sampler  = VK_NULL_HANDLE;
 
 uint32_t Pilot::PVulkanUtil::findMemoryType(VkPhysicalDevice      physical_device,
                                             uint32_t              type_filter,
@@ -46,7 +49,8 @@ void Pilot::PVulkanUtil::createBuffer(VkPhysicalDevice      physical_device,
                                       VkBufferUsageFlags    usage,
                                       VkMemoryPropertyFlags properties,
                                       VkBuffer&             buffer,
-                                      VkDeviceMemory&       buffer_memory)
+                                      VkDeviceMemory&       buffer_memory,
+                                      void*                 data)
 {
     VkBufferCreateInfo buffer_create_info {};
     buffer_create_info.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -74,6 +78,20 @@ void Pilot::PVulkanUtil::createBuffer(VkPhysicalDevice      physical_device,
         throw std::runtime_error("vkAllocateMemory");
     }
 
+    if (data)
+    {
+        void* mapped = nullptr;
+        if (vkMapMemory(device, buffer_memory, 0, size, 0, &mapped))
+        {
+            throw std::runtime_error("vkMapMemory");
+        }
+        std::memcpy(mapped, data, size);
+        if (mapped)
+        {
+            vkUnmapMemory(device, buffer_memory);
+        }
+    }
+
     // bind buffer with buffer memory
     vkBindBufferMemory(device, buffer, buffer_memory, 0); // offset = 0
 }
@@ -89,8 +107,8 @@ void Pilot::PVulkanUtil::copyBuffer(PVulkanContext* context,
 
     VkCommandBuffer command_buffer = context->beginSingleTimeCommands();
 
-    VkBufferCopy copyRegion = {srcOffset, dstOffset, size};
-    vkCmdCopyBuffer(command_buffer, srcBuffer, dstBuffer, 1, &copyRegion);
+    VkBufferCopy copy_region = {srcOffset, dstOffset, size};
+    vkCmdCopyBuffer(command_buffer, srcBuffer, dstBuffer, 1, &copy_region);
 
     context->endSingleTimeCommands(command_buffer);
 }
@@ -130,15 +148,16 @@ void Pilot::PVulkanUtil::createImage(VkPhysicalDevice      physical_device,
         throw std::runtime_error("failed to create image!");
     }
 
-    VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(device, image, &memRequirements);
+    VkMemoryRequirements mem_requirements;
+    vkGetImageMemoryRequirements(device, image, &mem_requirements);
 
-    VkMemoryAllocateInfo allocInfo {};
-    allocInfo.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize  = memRequirements.size;
-    allocInfo.memoryTypeIndex = findMemoryType(physical_device, memRequirements.memoryTypeBits, memory_property_flags);
+    VkMemoryAllocateInfo alloc_info {};
+    alloc_info.sType          = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    alloc_info.allocationSize = mem_requirements.size;
+    alloc_info.memoryTypeIndex =
+        findMemoryType(physical_device, mem_requirements.memoryTypeBits, memory_property_flags);
 
-    if (vkAllocateMemory(device, &allocInfo, nullptr, &memory) != VK_SUCCESS)
+    if (vkAllocateMemory(device, &alloc_info, nullptr, &memory) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to allocate image memory!");
     }
@@ -185,7 +204,7 @@ void Pilot::PVulkanUtil::transitionImageLayout(PVulkanContext*    context,
 {
     assert(context);
 
-    VkCommandBuffer commandBuffer = context->beginSingleTimeCommands();
+    VkCommandBuffer command_buffer = context->beginSingleTimeCommands();
 
     VkImageMemoryBarrier barrier {};
     barrier.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -200,16 +219,16 @@ void Pilot::PVulkanUtil::transitionImageLayout(PVulkanContext*    context,
     barrier.subresourceRange.baseArrayLayer = 0;
     barrier.subresourceRange.layerCount     = layer_count;
 
-    VkPipelineStageFlags sourceStage;
-    VkPipelineStageFlags destinationStage;
+    VkPipelineStageFlags source_stage;
+    VkPipelineStageFlags destination_stage;
 
     if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
     {
         barrier.srcAccessMask = 0;
         barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
-        sourceStage      = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        source_stage      = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        destination_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
     }
     else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL &&
              new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
@@ -217,8 +236,8 @@ void Pilot::PVulkanUtil::transitionImageLayout(PVulkanContext*    context,
         barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
         barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-        sourceStage      = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        source_stage      = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        destination_stage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     }
     // for getGuidAndDepthOfMouseClickOnRenderSceneForUI() get depthimage
     else if (old_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL &&
@@ -227,8 +246,8 @@ void Pilot::PVulkanUtil::transitionImageLayout(PVulkanContext*    context,
         barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
         barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 
-        sourceStage      = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        source_stage      = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+        destination_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
     }
     else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL &&
              new_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
@@ -236,8 +255,8 @@ void Pilot::PVulkanUtil::transitionImageLayout(PVulkanContext*    context,
         barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
         barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-        sourceStage      = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+        source_stage      = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        destination_stage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
     }
     // for generating mipmapped image
     else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
@@ -245,17 +264,17 @@ void Pilot::PVulkanUtil::transitionImageLayout(PVulkanContext*    context,
         barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
         barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 
-        sourceStage      = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        source_stage      = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        destination_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
     }
     else
     {
         throw std::invalid_argument("unsupported layout transition!");
     }
 
-    vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+    vkCmdPipelineBarrier(command_buffer, source_stage, destination_stage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-    context->endSingleTimeCommands(commandBuffer);
+    context->endSingleTimeCommands(command_buffer);
 }
 
 void Pilot::PVulkanUtil::copyBufferToImage(PVulkanContext* context,
@@ -267,7 +286,7 @@ void Pilot::PVulkanUtil::copyBufferToImage(PVulkanContext* context,
 {
     assert(context);
 
-    VkCommandBuffer commandBuffer = context->beginSingleTimeCommands();
+    VkCommandBuffer command_buffer = context->beginSingleTimeCommands();
 
     VkBufferImageCopy region {};
     region.bufferOffset                    = 0;
@@ -280,9 +299,9 @@ void Pilot::PVulkanUtil::copyBufferToImage(PVulkanContext* context,
     region.imageOffset                     = {0, 0, 0};
     region.imageExtent                     = {width, height, 1};
 
-    vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    vkCmdCopyBufferToImage(command_buffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-    context->endSingleTimeCommands(commandBuffer);
+    context->endSingleTimeCommands(command_buffer);
 }
 
 void Pilot::PVulkanUtil::genMipmappedImage(PVulkanContext* context,
@@ -293,30 +312,30 @@ void Pilot::PVulkanUtil::genMipmappedImage(PVulkanContext* context,
 {
     assert(context);
 
-    VkCommandBuffer commandBuffer = context->beginSingleTimeCommands();
+    VkCommandBuffer command_buffer = context->beginSingleTimeCommands();
 
     for (uint32_t i = 1; i < mip_levels; i++)
     {
-        VkImageBlit imageBlit {};
-        imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        imageBlit.srcSubresource.layerCount = 1;
-        imageBlit.srcSubresource.mipLevel   = i - 1;
-        imageBlit.srcOffsets[1].x           = std::max((int32_t)(width >> (i - 1)), 1);
-        imageBlit.srcOffsets[1].y           = std::max((int32_t)(height >> (i - 1)), 1);
-        imageBlit.srcOffsets[1].z           = 1;
+        VkImageBlit image_blit {};
+        image_blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        image_blit.srcSubresource.layerCount = 1;
+        image_blit.srcSubresource.mipLevel   = i - 1;
+        image_blit.srcOffsets[1].x           = std::max(static_cast<int32_t>(width >> (i - 1)), 1);
+        image_blit.srcOffsets[1].y           = std::max(static_cast<int32_t>(height >> (i - 1)), 1);
+        image_blit.srcOffsets[1].z           = 1;
 
-        imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        imageBlit.dstSubresource.layerCount = 1;
-        imageBlit.dstSubresource.mipLevel   = i;
-        imageBlit.dstOffsets[1].x           = std::max((int32_t)(width >> i), 1);
-        imageBlit.dstOffsets[1].y           = std::max((int32_t)(height >> i), 1);
-        imageBlit.dstOffsets[1].z           = 1;
+        image_blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        image_blit.dstSubresource.layerCount = 1;
+        image_blit.dstSubresource.mipLevel   = i;
+        image_blit.dstOffsets[1].x           = std::max(static_cast<int32_t>(width >> i), 1);
+        image_blit.dstOffsets[1].y           = std::max(static_cast<int32_t>(height >> i), 1);
+        image_blit.dstOffsets[1].z           = 1;
 
-        VkImageSubresourceRange mipSubRange {};
-        mipSubRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
-        mipSubRange.baseMipLevel = i;
-        mipSubRange.levelCount   = 1;
-        mipSubRange.layerCount   = 1;
+        VkImageSubresourceRange mip_sub_range {};
+        mip_sub_range.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
+        mip_sub_range.baseMipLevel = i;
+        mip_sub_range.levelCount   = 1;
+        mip_sub_range.layerCount   = 1;
 
         VkImageMemoryBarrier barrier {};
         barrier.sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -327,9 +346,9 @@ void Pilot::PVulkanUtil::genMipmappedImage(PVulkanContext* context,
         barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.image               = image;
-        barrier.subresourceRange    = mipSubRange;
+        barrier.subresourceRange    = mip_sub_range;
 
-        vkCmdPipelineBarrier(commandBuffer,
+        vkCmdPipelineBarrier(command_buffer,
                              VK_PIPELINE_STAGE_TRANSFER_BIT,
                              VK_PIPELINE_STAGE_TRANSFER_BIT,
                              0,
@@ -340,13 +359,13 @@ void Pilot::PVulkanUtil::genMipmappedImage(PVulkanContext* context,
                              1,
                              &barrier);
 
-        vkCmdBlitImage(commandBuffer,
+        vkCmdBlitImage(command_buffer,
                        image,
                        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                        image,
                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                        1,
-                       &imageBlit,
+                       &image_blit,
                        VK_FILTER_LINEAR);
 
         barrier.oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -354,7 +373,7 @@ void Pilot::PVulkanUtil::genMipmappedImage(PVulkanContext* context,
         barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
         barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 
-        vkCmdPipelineBarrier(commandBuffer,
+        vkCmdPipelineBarrier(command_buffer,
                              VK_PIPELINE_STAGE_TRANSFER_BIT,
                              VK_PIPELINE_STAGE_TRANSFER_BIT,
                              0,
@@ -366,11 +385,11 @@ void Pilot::PVulkanUtil::genMipmappedImage(PVulkanContext* context,
                              &barrier);
     }
 
-    VkImageSubresourceRange mipSubRange {};
-    mipSubRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
-    mipSubRange.baseMipLevel = 0;
-    mipSubRange.levelCount   = mip_levels;
-    mipSubRange.layerCount   = 1;
+    VkImageSubresourceRange mip_sub_range {};
+    mip_sub_range.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
+    mip_sub_range.baseMipLevel = 0;
+    mip_sub_range.levelCount   = mip_levels;
+    mip_sub_range.layerCount   = 1;
 
     VkImageMemoryBarrier barrier {};
     barrier.sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -381,9 +400,9 @@ void Pilot::PVulkanUtil::genMipmappedImage(PVulkanContext* context,
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.image               = image;
-    barrier.subresourceRange    = mipSubRange;
+    barrier.subresourceRange    = mip_sub_range;
 
-    vkCmdPipelineBarrier(commandBuffer,
+    vkCmdPipelineBarrier(command_buffer,
                          VK_PIPELINE_STAGE_TRANSFER_BIT,
                          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                          0,
@@ -394,7 +413,7 @@ void Pilot::PVulkanUtil::genMipmappedImage(PVulkanContext* context,
                          1,
                          &barrier);
 
-    context->endSingleTimeCommands(commandBuffer);
+    context->endSingleTimeCommands(command_buffer);
 }
 
 VkSampler Pilot::PVulkanUtil::getOrCreateMipmapSampler(VkPhysicalDevice physical_device,
@@ -416,26 +435,26 @@ VkSampler Pilot::PVulkanUtil::getOrCreateMipmapSampler(VkPhysicalDevice physical
         VkPhysicalDeviceProperties physical_device_properties {};
         vkGetPhysicalDeviceProperties(physical_device, &physical_device_properties);
 
-        VkSamplerCreateInfo samplerInfo {};
-        samplerInfo.sType        = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        samplerInfo.magFilter    = VK_FILTER_LINEAR;
-        samplerInfo.minFilter    = VK_FILTER_LINEAR;
-        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        VkSamplerCreateInfo sampler_info {};
+        sampler_info.sType        = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        sampler_info.magFilter    = VK_FILTER_LINEAR;
+        sampler_info.minFilter    = VK_FILTER_LINEAR;
+        sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 
-        samplerInfo.anisotropyEnable = VK_TRUE;
-        samplerInfo.maxAnisotropy    = physical_device_properties.limits.maxSamplerAnisotropy;
+        sampler_info.anisotropyEnable = VK_TRUE;
+        sampler_info.maxAnisotropy    = physical_device_properties.limits.maxSamplerAnisotropy;
 
-        samplerInfo.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-        samplerInfo.unnormalizedCoordinates = VK_FALSE;
-        samplerInfo.compareEnable           = VK_FALSE;
-        samplerInfo.compareOp               = VK_COMPARE_OP_ALWAYS;
-        samplerInfo.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        sampler_info.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        sampler_info.unnormalizedCoordinates = VK_FALSE;
+        sampler_info.compareEnable           = VK_FALSE;
+        sampler_info.compareOp               = VK_COMPARE_OP_ALWAYS;
+        sampler_info.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
-        samplerInfo.maxLod = mip_levels - 1;
+        sampler_info.maxLod = mip_levels - 1;
 
-        if (vkCreateSampler(device, &samplerInfo, nullptr, &sampler) != VK_SUCCESS)
+        if (vkCreateSampler(device, &sampler_info, nullptr, &sampler) != VK_SUCCESS)
         {
             assert(0);
         }
@@ -462,26 +481,26 @@ VkSampler Pilot::PVulkanUtil::getOrCreateNearestSampler(VkPhysicalDevice physica
         VkPhysicalDeviceProperties physical_device_properties {};
         vkGetPhysicalDeviceProperties(physical_device, &physical_device_properties);
 
-        VkSamplerCreateInfo samplerInfo {};
+        VkSamplerCreateInfo sampler_info {};
 
-        samplerInfo.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        samplerInfo.magFilter               = VK_FILTER_NEAREST;
-        samplerInfo.minFilter               = VK_FILTER_NEAREST;
-        samplerInfo.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-        samplerInfo.addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.mipLodBias              = 0.0f;
-        samplerInfo.anisotropyEnable        = VK_FALSE;
-        samplerInfo.maxAnisotropy           = physical_device_properties.limits.maxSamplerAnisotropy; // close :1.0f
-        samplerInfo.compareEnable           = VK_FALSE;
-        samplerInfo.compareOp               = VK_COMPARE_OP_ALWAYS;
-        samplerInfo.minLod                  = 0.0f;
-        samplerInfo.maxLod                  = 8.0f; // todo: m_irradiance_texture_miplevels
-        samplerInfo.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-        samplerInfo.unnormalizedCoordinates = VK_FALSE;
+        sampler_info.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        sampler_info.magFilter               = VK_FILTER_NEAREST;
+        sampler_info.minFilter               = VK_FILTER_NEAREST;
+        sampler_info.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+        sampler_info.addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        sampler_info.addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        sampler_info.addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        sampler_info.mipLodBias              = 0.0f;
+        sampler_info.anisotropyEnable        = VK_FALSE;
+        sampler_info.maxAnisotropy           = physical_device_properties.limits.maxSamplerAnisotropy; // close :1.0f
+        sampler_info.compareEnable           = VK_FALSE;
+        sampler_info.compareOp               = VK_COMPARE_OP_ALWAYS;
+        sampler_info.minLod                  = 0.0f;
+        sampler_info.maxLod                  = 8.0f; // todo: m_irradiance_texture_miplevels
+        sampler_info.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        sampler_info.unnormalizedCoordinates = VK_FALSE;
 
-        if (vkCreateSampler(device, &samplerInfo, nullptr, &m_nearest_sampler) != VK_SUCCESS)
+        if (vkCreateSampler(device, &sampler_info, nullptr, &m_nearest_sampler) != VK_SUCCESS)
         {
             throw std::runtime_error("vk create sampler");
         }
@@ -490,33 +509,33 @@ VkSampler Pilot::PVulkanUtil::getOrCreateNearestSampler(VkPhysicalDevice physica
     return m_nearest_sampler;
 }
 
-VkSampler Pilot::PVulkanUtil::getOrCreateLinearSampler(VkPhysicalDevice physical_device, VkDevice device) 
+VkSampler Pilot::PVulkanUtil::getOrCreateLinearSampler(VkPhysicalDevice physical_device, VkDevice device)
 {
     if (m_linear_sampler == VK_NULL_HANDLE)
     {
         VkPhysicalDeviceProperties physical_device_properties {};
         vkGetPhysicalDeviceProperties(physical_device, &physical_device_properties);
 
-        VkSamplerCreateInfo samplerInfo {};
+        VkSamplerCreateInfo sampler_info {};
 
-        samplerInfo.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        samplerInfo.magFilter               = VK_FILTER_LINEAR;
-        samplerInfo.minFilter               = VK_FILTER_LINEAR;
-        samplerInfo.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-        samplerInfo.addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.mipLodBias              = 0.0f;
-        samplerInfo.anisotropyEnable        = VK_FALSE;
-        samplerInfo.maxAnisotropy           = physical_device_properties.limits.maxSamplerAnisotropy; // close :1.0f
-        samplerInfo.compareEnable           = VK_FALSE;
-        samplerInfo.compareOp               = VK_COMPARE_OP_ALWAYS;
-        samplerInfo.minLod                  = 0.0f;
-        samplerInfo.maxLod                  = 8.0f; // todo: m_irradiance_texture_miplevels
-        samplerInfo.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-        samplerInfo.unnormalizedCoordinates = VK_FALSE;
+        sampler_info.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        sampler_info.magFilter               = VK_FILTER_LINEAR;
+        sampler_info.minFilter               = VK_FILTER_LINEAR;
+        sampler_info.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+        sampler_info.addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        sampler_info.addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        sampler_info.addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        sampler_info.mipLodBias              = 0.0f;
+        sampler_info.anisotropyEnable        = VK_FALSE;
+        sampler_info.maxAnisotropy           = physical_device_properties.limits.maxSamplerAnisotropy; // close :1.0f
+        sampler_info.compareEnable           = VK_FALSE;
+        sampler_info.compareOp               = VK_COMPARE_OP_ALWAYS;
+        sampler_info.minLod                  = 0.0f;
+        sampler_info.maxLod                  = 8.0f; // todo: m_irradiance_texture_miplevels
+        sampler_info.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        sampler_info.unnormalizedCoordinates = VK_FALSE;
 
-        if (vkCreateSampler(device, &samplerInfo, nullptr, &m_linear_sampler) != VK_SUCCESS)
+        if (vkCreateSampler(device, &sampler_info, nullptr, &m_linear_sampler) != VK_SUCCESS)
         {
             throw std::runtime_error("vk create sampler");
         }
@@ -535,4 +554,275 @@ void Pilot::PVulkanUtil::destroyLinearSampler(VkDevice device)
 {
     vkDestroySampler(device, m_linear_sampler, nullptr);
     m_linear_sampler = VK_NULL_HANDLE;
+}
+
+void Pilot::PVulkanUtil::bufferToImage(VkImage*              image,
+                                       VkDeviceMemory*       memory,
+                                       VkImageView*          view,
+                                       class PVulkanContext* context,
+                                       void*                 buffer,
+                                       VkDeviceSize          buffer_size,
+                                       VkFormat              format,
+                                       uint32_t              width,
+                                       uint32_t              height,
+                                       VkImageUsageFlags     usage,
+                                       VkImageLayout         layout)
+{
+    VkMemoryAllocateInfo mem_alloc_info = {};
+    mem_alloc_info.sType                = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    VkMemoryRequirements mem_reqs;
+
+    // Use a separate command buffer for texture loading
+    VkCommandBuffer copy_cmd = context->beginSingleTimeCommands();
+
+    // Create a host-visible staging buffer that contains the raw image data
+    VkBuffer       staging_buffer;
+    VkDeviceMemory staging_memory;
+
+    VkBufferCreateInfo buffer_create_info = {};
+    buffer_create_info.sType              = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    buffer_create_info.size               = buffer_size;
+    // This buffer is used as a transfer source for the buffer copy
+    buffer_create_info.usage       = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    buffer_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    if (vkCreateBuffer(context->_device, &buffer_create_info, nullptr, &staging_buffer))
+    {
+        throw std::runtime_error("failed to create buffer");
+    }
+
+    // Get memory requirements for the staging buffer (alignment, memory type bits)
+    vkGetBufferMemoryRequirements(context->_device, staging_buffer, &mem_reqs);
+
+    mem_alloc_info.allocationSize = mem_reqs.size;
+    // Get memory type index for a host visible buffer
+    mem_alloc_info.memoryTypeIndex =
+        findMemoryType(context->_physical_device,
+                       mem_reqs.memoryTypeBits,
+                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    if (vkAllocateMemory(context->_device, &mem_alloc_info, nullptr, &staging_memory))
+    {
+        throw std::runtime_error("failed to allocate memory");
+    }
+    if (vkBindBufferMemory(context->_device, staging_buffer, staging_memory, 0))
+    {
+        throw std::runtime_error("failed to bind buffer");
+    }
+
+    // Copy texture data into staging buffer
+    void* data;
+    if (vkMapMemory(context->_device, staging_memory, 0, mem_reqs.size, 0, &data))
+    {
+        throw std::runtime_error("failed to map memory");
+    }
+    memcpy(data, buffer, buffer_size);
+    vkUnmapMemory(context->_device, staging_memory);
+
+    VkBufferImageCopy buffer_copy_region               = {};
+    buffer_copy_region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+    buffer_copy_region.imageSubresource.mipLevel       = 0;
+    buffer_copy_region.imageSubresource.baseArrayLayer = 0;
+    buffer_copy_region.imageSubresource.layerCount     = 1;
+    buffer_copy_region.imageExtent.width               = width;
+    buffer_copy_region.imageExtent.height              = height;
+    buffer_copy_region.imageExtent.depth               = 1;
+    buffer_copy_region.bufferOffset                    = 0;
+
+    // Create optimal tiled target image
+    VkImageCreateInfo image_create_info = {};
+    image_create_info.sType             = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    image_create_info.imageType         = VK_IMAGE_TYPE_2D;
+    image_create_info.format            = format;
+    image_create_info.mipLevels         = 1;
+    image_create_info.arrayLayers       = 1;
+    image_create_info.samples           = VK_SAMPLE_COUNT_1_BIT;
+    image_create_info.tiling            = VK_IMAGE_TILING_OPTIMAL;
+    image_create_info.sharingMode       = VK_SHARING_MODE_EXCLUSIVE;
+    image_create_info.initialLayout     = VK_IMAGE_LAYOUT_UNDEFINED;
+    image_create_info.extent            = {width, height, 1};
+    image_create_info.usage             = usage;
+    // Ensure that the TRANSFER_DST bit is set for staging
+    if (!(image_create_info.usage & VK_IMAGE_USAGE_TRANSFER_DST_BIT))
+    {
+        image_create_info.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    }
+
+    if (vkCreateImage(context->_device, &image_create_info, nullptr, image))
+    {
+        throw std::runtime_error("failed to create image");
+    }
+
+    vkGetImageMemoryRequirements(context->_device, *image, &mem_reqs);
+
+    mem_alloc_info.allocationSize = mem_reqs.size;
+
+    mem_alloc_info.memoryTypeIndex =
+        findMemoryType(context->_physical_device, mem_reqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    if (vkAllocateMemory(context->_device, &mem_alloc_info, nullptr, memory))
+    {
+        throw std::runtime_error("failed to allocate memory");
+    }
+    if (vkBindImageMemory(context->_device, *image, *memory, 0))
+    {
+        throw std::runtime_error("failed to bind image memory");
+    }
+
+    VkImageSubresourceRange subresource_range = {};
+    subresource_range.aspectMask              = VK_IMAGE_ASPECT_COLOR_BIT;
+    subresource_range.baseMipLevel            = 0;
+    subresource_range.levelCount              = 1;
+    subresource_range.layerCount              = 1;
+
+    // Image barrier for optimal image (target)
+    // Optimal image will be used as destination for the copy
+    setImageLayout(
+        copy_cmd, *image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresource_range);
+
+    // Copy mip levels from staging buffer
+    vkCmdCopyBufferToImage(
+        copy_cmd, staging_buffer, *image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &buffer_copy_region);
+
+    // Change texture image layout to shader read after all mip levels have been copied
+    setImageLayout(copy_cmd, *image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, layout, subresource_range);
+
+    context->endSingleTimeCommands(copy_cmd);
+
+    // Clean up staging resources
+    vkFreeMemory(context->_device, staging_memory, nullptr);
+    vkDestroyBuffer(context->_device, staging_buffer, nullptr);
+
+    // Create image view
+    VkImageViewCreateInfo view_create_info = {};
+    view_create_info.sType                 = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    view_create_info.pNext                 = nullptr;
+    view_create_info.viewType              = VK_IMAGE_VIEW_TYPE_2D;
+    view_create_info.format                = format;
+    view_create_info.components            = {
+                   VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
+    view_create_info.subresourceRange            = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+    view_create_info.subresourceRange.levelCount = 1;
+    view_create_info.image                       = *image;
+    if (vkCreateImageView(context->_device, &view_create_info, nullptr, view))
+    {
+        throw std::runtime_error("failed to create image view");
+    }
+}
+
+void Pilot::PVulkanUtil::setImageLayout(VkCommandBuffer         cmdbuffer,
+                                        VkImage                 image,
+                                        VkImageLayout           oldImageLayout,
+                                        VkImageLayout           newImageLayout,
+                                        VkImageSubresourceRange subresourceRange,
+                                        VkPipelineStageFlags    srcStageMask,
+                                        VkPipelineStageFlags    dstStageMask)
+{
+    // Create an image barrier object
+    VkImageMemoryBarrier image_memory_barrier = {};
+    image_memory_barrier.sType                = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    image_memory_barrier.srcQueueFamilyIndex  = VK_QUEUE_FAMILY_IGNORED;
+    image_memory_barrier.dstQueueFamilyIndex  = VK_QUEUE_FAMILY_IGNORED;
+    image_memory_barrier.oldLayout            = oldImageLayout;
+    image_memory_barrier.newLayout            = newImageLayout;
+    image_memory_barrier.image                = image;
+    image_memory_barrier.subresourceRange     = subresourceRange;
+
+    // Source layouts (old)
+    // Source access mask controls actions that have to be finished on the old layout
+    // before it will be transitioned to the new layout
+    switch (oldImageLayout)
+    {
+        case VK_IMAGE_LAYOUT_UNDEFINED:
+            // Image layout is undefined (or does not matter)
+            // Only valid as initial layout
+            // No flags required, listed only for completeness
+            image_memory_barrier.srcAccessMask = 0;
+            break;
+
+        case VK_IMAGE_LAYOUT_PREINITIALIZED:
+            // Image is preinitialized
+            // Only valid as initial layout for linear images, preserves memory contents
+            // Make sure host writes have been finished
+            image_memory_barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+            break;
+
+        case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+            // Image is a color attachment
+            // Make sure any writes to the color buffer have been finished
+            image_memory_barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            break;
+
+        case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+            // Image is a depth/stencil attachment
+            // Make sure any writes to the depth/stencil buffer have been finished
+            image_memory_barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            break;
+
+        case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+            // Image is a transfer source
+            // Make sure any reads from the image have been finished
+            image_memory_barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+            break;
+
+        case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+            // Image is a transfer destination
+            // Make sure any writes to the image have been finished
+            image_memory_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            break;
+
+        case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+            // Image is read by a shader
+            // Make sure any shader reads from the image have been finished
+            image_memory_barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            break;
+        default:
+            // Other source layouts aren't handled (yet)
+            break;
+    }
+
+    // Target layouts (new)
+    // Destination access mask controls the dependency for the new image layout
+    switch (newImageLayout)
+    {
+        case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+            // Image will be used as a transfer destination
+            // Make sure any writes to the image have been finished
+            image_memory_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            break;
+
+        case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+            // Image will be used as a transfer source
+            // Make sure any reads from the image have been finished
+            image_memory_barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+            break;
+
+        case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+            // Image will be used as a color attachment
+            // Make sure any writes to the color buffer have been finished
+            image_memory_barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            break;
+
+        case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+            // Image layout will be used as a depth/stencil attachment
+            // Make sure any writes to depth/stencil buffer have been finished
+            image_memory_barrier.dstAccessMask =
+                image_memory_barrier.dstAccessMask | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            break;
+
+        case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+            // Image will be read in a shader (sampler, input attachment)
+            // Make sure any writes to the image have been finished
+            if (image_memory_barrier.srcAccessMask == 0)
+            {
+                image_memory_barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+            }
+            image_memory_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            break;
+        default:
+            // Other source layouts aren't handled (yet)
+            break;
+    }
+
+    // Put barrier inside setup command buffer
+    vkCmdPipelineBarrier(cmdbuffer, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
 }

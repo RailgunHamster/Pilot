@@ -22,9 +22,12 @@ namespace Pilot
         void updateAfterFramebufferRecreate(const std::vector<VkImageView>& input_attachments);
 
     private:
-        void setupDescriptorSetLayout();
-        void setupPipelines();
-        void setupDescriptorSet();
+        VkBuffer       kernel_buffer;
+        VkDeviceMemory kernel_memory;
+        void           setupAttachments();
+        void           setupDescriptorSetLayout();
+        void           setupPipelines();
+        void           setupDescriptorSet();
     };
 
     class PColorGradingPass : public PRenderPassBase
@@ -91,12 +94,20 @@ namespace Pilot
         _main_camera_pass_gbuffer_a               = 0,
         _main_camera_pass_gbuffer_b               = 1,
         _main_camera_pass_gbuffer_c               = 2,
-        _main_camera_pass_backup_buffer_odd       = 3,
-        _main_camera_pass_backup_buffer_even      = 4,
-        _main_camera_pass_depth                   = 5,
-        _main_camera_pass_swap_chain_image        = 6,
-        _main_camera_pass_custom_attachment_count = 5,
-        _main_camera_pass_attachment_count        = 7,
+        _main_camera_pass_gbuffer_d               = 3,
+        _main_camera_pass_backup_buffer_odd       = 4,
+        _main_camera_pass_backup_buffer_even      = 5,
+        _main_camera_pass_depth                   = 6,
+        _main_camera_pass_swap_chain_image        = 7,
+        _main_camera_pass_custom_attachment_count = 6,
+        _main_camera_pass_attachment_count        = 8,
+    };
+
+    enum
+    {
+        _custom_screen_space_ambient_occlusion_noise       = 0,
+        _custom_screen_space_ambient_occlusion_image_count = 1,
+        _custom_screen_space_ambient_occlusion_samples     = 2,
     };
 
     enum
