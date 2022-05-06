@@ -1,9 +1,12 @@
+#include "render/render_camera.h"
 #include "runtime/function/render/include/render/vulkan_manager/vulkan_common.h"
 #include "runtime/function/render/include/render/vulkan_manager/vulkan_context.h"
 #include "runtime/function/render/include/render/vulkan_manager/vulkan_directional_light_pass.h"
 #include "runtime/function/render/include/render/vulkan_manager/vulkan_pick_pass.h"
 #include "runtime/function/render/include/render/vulkan_manager/vulkan_point_light_pass.h"
 #include "runtime/function/render/include/render/vulkan_manager/vulkan_render_pass.h"
+#include "vulkan/vulkan_core.h"
+#include <memory>
 
 namespace Pilot
 {
@@ -22,12 +25,33 @@ namespace Pilot
         void updateAfterFramebufferRecreate(const std::vector<VkImageView>& input_attachments);
 
     private:
+        // noise
+        VkSampler noise_sampler;
+        // kernel
         VkBuffer       kernel_buffer;
         VkDeviceMemory kernel_memory;
-        void           setupAttachments();
-        void           setupDescriptorSetLayout();
-        void           setupPipelines();
-        void           setupDescriptorSet();
+        // camera
+        VkBuffer       projection_buffer;
+        VkDeviceMemory projection_memory;
+
+    public:
+        struct SsaoData
+        {
+            glm::mat4 projection;
+            glm::mat4 view;
+            glm::vec4 viewport;
+            glm::vec2 extent;
+            float     znear;
+            float     zfar;
+            int       state;
+        };
+        void update(const Scene& scene);
+
+    private:
+        void setupAttachments();
+        void setupDescriptorSetLayout();
+        void setupPipelines();
+        void setupDescriptorSet();
     };
 
     class PColorGradingPass : public PRenderPassBase

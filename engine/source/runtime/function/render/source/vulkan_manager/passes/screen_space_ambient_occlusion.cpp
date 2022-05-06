@@ -1,4 +1,5 @@
-#include "glm/geometric.hpp"
+#include "render/framebuffer.h"
+#include "runtime/function/render/include/render/glm_wrapper.h"
 #include "runtime/function/render/include/render/vulkan_manager/vulkan_common.h"
 #include "runtime/function/render/include/render/vulkan_manager/vulkan_mesh.h"
 #include "runtime/function/render/include/render/vulkan_manager/vulkan_misc.h"
@@ -6,6 +7,7 @@
 #include "runtime/function/render/include/render/vulkan_manager/vulkan_util.h"
 
 #include "vulkan/vulkan_core.h"
+#include <iostream>
 #include <post_process_vert.h>
 #include <random>
 #include <screen_space_ambient_occlusion_frag.h>
@@ -28,11 +30,32 @@ namespace Pilot
         updateAfterFramebufferRecreate(input_attachments);
     }
 
+    void PScreenSpaceAmbientOcclusionPass::update(const Scene& scene)
+    {
+        const auto& camera = scene.m_camera;
+        SsaoData    data;
+        data.projection = GLMUtil::fromMat4x4(camera->getPersProjMatrix());
+        data.view       = GLMUtil::fromMat4x4(camera->getViewMatrix());
+        const auto& v   = m_command_info._viewport;
+        const auto& s   = m_command_info._scissor;
+        data.viewport   = glm::vec4(v.x, v.y, v.width, v.height);
+        data.extent     = glm::vec2(s.extent.width, s.extent.height);
+        data.znear      = camera->m_znear;
+        data.zfar       = camera->m_zfar;
+        data.state      = scene.getSSAOState();
+        void* mapped    = nullptr;
+        if (vkMapMemory(m_p_vulkan_context->_device, projection_memory, 0, sizeof(SsaoData), 0, &mapped))
+        {
+            throw std::runtime_error("vkMapMemory");
+        }
+        std::memcpy(mapped, &data, sizeof(SsaoData));
+        vkUnmapMemory(m_p_vulkan_context->_device, projection_memory);
+    }
+
     void PScreenSpaceAmbientOcclusionPass::setupAttachments()
     {
         std::mt19937                          rand_engine(time(nullptr));
         std::uniform_real_distribution<float> rand_dist(0.0, 1.0);
-
         // noise
         std::vector<glm::vec4> noise(SSAO_NOISE_DIM * SSAO_NOISE_DIM);
         for (auto& n : noise)
@@ -47,6 +70,7 @@ namespace Pilot
         PVulkanUtil::bufferToImage(&noise_attachment.image,
                                    &noise_attachment.mem,
                                    &noise_attachment.view,
+                                   &noise_sampler,
                                    m_p_vulkan_context,
                                    noise.data(),
                                    noise.size() * sizeof(glm::vec4),
@@ -55,7 +79,6 @@ namespace Pilot
                                    SSAO_NOISE_DIM,
                                    VK_IMAGE_USAGE_SAMPLED_BIT,
                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
         // kernel
         std::vector<glm::vec4> kernel(SSAO_KERNEL_SIZE);
         for (uint32_t i = 0; i < SSAO_KERNEL_SIZE; ++i)
@@ -76,54 +99,68 @@ namespace Pilot
                                   kernel_buffer,
                                   kernel_memory,
                                   kernel.data());
+        // projection
+        PVulkanUtil::createBuffer(m_p_vulkan_context->_physical_device,
+                                  m_p_vulkan_context->_device,
+                                  sizeof(SsaoData),
+                                  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                  projection_buffer,
+                                  projection_memory,
+                                  nullptr);
     }
 
     void PScreenSpaceAmbientOcclusionPass::setupDescriptorSetLayout()
     {
         _descriptor_infos.resize(1);
 
-        VkDescriptorSetLayoutBinding post_process_global_layout_bindings[8] = {};
+        VkDescriptorSetLayoutBinding post_process_global_layout_bindings[9] = {};
 
-        VkDescriptorSetLayoutBinding& gbuffer_a = post_process_global_layout_bindings[0];
-        gbuffer_a.binding                       = 0;
-        gbuffer_a.descriptorType                = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        gbuffer_a.descriptorCount               = 1;
-        gbuffer_a.stageFlags                    = VK_SHADER_STAGE_FRAGMENT_BIT;
-        VkDescriptorSetLayoutBinding& gbuffer_b = post_process_global_layout_bindings[1];
-        gbuffer_b.binding                       = 1;
-        gbuffer_b.descriptorType                = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        gbuffer_b.descriptorCount               = 1;
-        gbuffer_b.stageFlags                    = VK_SHADER_STAGE_FRAGMENT_BIT;
-        VkDescriptorSetLayoutBinding& gbuffer_c = post_process_global_layout_bindings[2];
-        gbuffer_c.binding                       = 2;
-        gbuffer_c.descriptorType                = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        gbuffer_c.descriptorCount               = 1;
-        gbuffer_c.stageFlags                    = VK_SHADER_STAGE_FRAGMENT_BIT;
-        VkDescriptorSetLayoutBinding& gbuffer_d = post_process_global_layout_bindings[3];
-        gbuffer_d.binding                       = 3;
-        gbuffer_d.descriptorType                = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        gbuffer_d.descriptorCount               = 1;
-        gbuffer_d.stageFlags                    = VK_SHADER_STAGE_FRAGMENT_BIT;
-        VkDescriptorSetLayoutBinding& depth     = post_process_global_layout_bindings[4];
-        depth.binding                           = 4;
-        depth.descriptorType                    = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        depth.descriptorCount                   = 1;
-        depth.stageFlags                        = VK_SHADER_STAGE_FRAGMENT_BIT;
-        VkDescriptorSetLayoutBinding& deferred  = post_process_global_layout_bindings[5];
-        deferred.binding                        = 5;
-        deferred.descriptorType                 = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-        deferred.descriptorCount                = 1;
-        deferred.stageFlags                     = VK_SHADER_STAGE_FRAGMENT_BIT;
-        VkDescriptorSetLayoutBinding& noise     = post_process_global_layout_bindings[6];
-        noise.binding                           = 6;
-        noise.descriptorType                    = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        noise.descriptorCount                   = 1;
-        noise.stageFlags                        = VK_SHADER_STAGE_FRAGMENT_BIT;
-        VkDescriptorSetLayoutBinding& kernel    = post_process_global_layout_bindings[7];
-        kernel.binding                          = 7;
-        kernel.descriptorType                   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        kernel.descriptorCount                  = 1;
-        kernel.stageFlags                       = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding& gbuffer_a  = post_process_global_layout_bindings[0];
+        gbuffer_a.binding                        = 0;
+        gbuffer_a.descriptorType                 = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        gbuffer_a.descriptorCount                = 1;
+        gbuffer_a.stageFlags                     = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding& gbuffer_b  = post_process_global_layout_bindings[1];
+        gbuffer_b.binding                        = 1;
+        gbuffer_b.descriptorType                 = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        gbuffer_b.descriptorCount                = 1;
+        gbuffer_b.stageFlags                     = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding& gbuffer_c  = post_process_global_layout_bindings[2];
+        gbuffer_c.binding                        = 2;
+        gbuffer_c.descriptorType                 = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        gbuffer_c.descriptorCount                = 1;
+        gbuffer_c.stageFlags                     = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding& gbuffer_d  = post_process_global_layout_bindings[3];
+        gbuffer_d.binding                        = 3;
+        gbuffer_d.descriptorType                 = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        gbuffer_d.descriptorCount                = 1;
+        gbuffer_d.stageFlags                     = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding& depth      = post_process_global_layout_bindings[4];
+        depth.binding                            = 4;
+        depth.descriptorType                     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        depth.descriptorCount                    = 1;
+        depth.stageFlags                         = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding& deferred   = post_process_global_layout_bindings[5];
+        deferred.binding                         = 5;
+        deferred.descriptorType                  = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        deferred.descriptorCount                 = 1;
+        deferred.stageFlags                      = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding& noise      = post_process_global_layout_bindings[6];
+        noise.binding                            = 6;
+        noise.descriptorType                     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        noise.descriptorCount                    = 1;
+        noise.stageFlags                         = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding& kernel     = post_process_global_layout_bindings[7];
+        kernel.binding                           = 7;
+        kernel.descriptorType                    = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        kernel.descriptorCount                   = 1;
+        kernel.stageFlags                        = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding& projection = post_process_global_layout_bindings[8];
+        projection.binding                       = 8;
+        projection.descriptorType                = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        projection.descriptorCount               = 1;
+        projection.stageFlags                    = VK_SHADER_STAGE_FRAGMENT_BIT;
 
         VkDescriptorSetLayoutCreateInfo post_process_global_layout_create_info;
         post_process_global_layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -341,8 +378,7 @@ namespace Pilot
         color_attachment_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         VkDescriptorImageInfo noise_attachment_info = {};
-        noise_attachment_info.sampler =
-            PVulkanUtil::getOrCreateNearestSampler(m_p_vulkan_context->_physical_device, m_p_vulkan_context->_device);
+        noise_attachment_info.sampler               = noise_sampler;
         noise_attachment_info.imageView   = _framebuffer.attachments[_custom_screen_space_ambient_occlusion_noise].view;
         noise_attachment_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
@@ -351,7 +387,12 @@ namespace Pilot
         kernel_attachment_info.offset                 = 0;
         kernel_attachment_info.range                  = -1;
 
-        VkWriteDescriptorSet post_process_descriptor_writes_info[8];
+        VkDescriptorBufferInfo projection_attachment_info = {};
+        projection_attachment_info.buffer                 = projection_buffer;
+        projection_attachment_info.offset                 = 0;
+        projection_attachment_info.range                  = -1;
+
+        VkWriteDescriptorSet post_process_descriptor_writes_info[9];
 
         VkWriteDescriptorSet& post_process_descriptor_gbuffer_a_attachment_write_info =
             post_process_descriptor_writes_info[0];
@@ -444,6 +485,16 @@ namespace Pilot
         kernel_input_attachment_write_info.descriptorType        = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         kernel_input_attachment_write_info.descriptorCount       = 1;
         kernel_input_attachment_write_info.pBufferInfo           = &kernel_attachment_info;
+
+        VkWriteDescriptorSet& projection_input_attachment_write_info = post_process_descriptor_writes_info[8];
+        projection_input_attachment_write_info.sType                 = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        projection_input_attachment_write_info.pNext                 = nullptr;
+        projection_input_attachment_write_info.dstSet                = _descriptor_infos[0].descriptor_set;
+        projection_input_attachment_write_info.dstBinding            = 8;
+        projection_input_attachment_write_info.dstArrayElement       = 0;
+        projection_input_attachment_write_info.descriptorType        = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        projection_input_attachment_write_info.descriptorCount       = 1;
+        projection_input_attachment_write_info.pBufferInfo           = &projection_attachment_info;
 
         vkUpdateDescriptorSets(m_p_vulkan_context->_device,
                                sizeof(post_process_descriptor_writes_info) /

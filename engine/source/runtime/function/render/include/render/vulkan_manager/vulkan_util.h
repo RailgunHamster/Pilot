@@ -78,6 +78,7 @@ namespace Pilot
         static void           bufferToImage(VkImage*              image,
                                             VkDeviceMemory*       memory,
                                             VkImageView*          view,
+                                            VkSampler*            sampler,
                                             class PVulkanContext* context,
                                             void*                 buffer,
                                             VkDeviceSize          buffer_size,
@@ -97,7 +98,9 @@ namespace Pilot
         static VkSampler
         getOrCreateMipmapSampler(VkPhysicalDevice physical_device, VkDevice device, uint32_t width, uint32_t height);
         static void      destroyMipmappedSampler(VkDevice device);
-        static VkSampler getOrCreateNearestSampler(VkPhysicalDevice physical_device, VkDevice device);
+        static VkSampler getOrCreateNearestSampler(VkPhysicalDevice     physical_device,
+                                                   VkDevice             device,
+                                                   VkSamplerAddressMode mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
         static VkSampler getOrCreateLinearSampler(VkPhysicalDevice physical_device, VkDevice device);
         static void      destroyNearestSampler(VkDevice device);
         static void      destroyLinearSampler(VkDevice device);

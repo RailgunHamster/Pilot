@@ -159,7 +159,7 @@ namespace Pilot
         TextureHandle m_brdfLUT_texture_handle;
         TextureHandle m_irradiance_texture_handle[6];
         TextureHandle m_specular_texture_handle[6];
-        
+
         // these are not populated by load
         // global textures for color grading
         TextureHandle m_color_grading_LUT_texture_handle;
@@ -188,6 +188,23 @@ namespace Pilot
         void clearMaterials() { m_materials.clear(); }
         void clearAxis() { m_axis.clear(); }
         void setAxisMesh(const std::vector<RenderMesh>& axis_meshes) { m_axis = axis_meshes; }
+
+        bool ssao_state = true;
+        bool ssao_only  = false;
+        void toggleSSAO() { ssao_state = !ssao_state; }
+        void toggleSSAOOnly() { ssao_only = !ssao_only; }
+        int  getSSAOState() const
+        {
+            if (ssao_only)
+            {
+                return 2;
+            }
+            if (ssao_state)
+            {
+                return 0;
+            }
+            return 1;
+        }
 
     private:
         std::mutex m_scene_mutex;

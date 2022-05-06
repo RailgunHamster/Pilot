@@ -115,6 +115,8 @@ void Pilot::PVulkanManager::renderFrame(class Scene&                scene,
         assert(VK_SUCCESS == acquire_image_result);
     }
 
+    m_screen_space_ambient_occlusion_pass.update(scene);
+
     // begin command buffer
     VkCommandBufferBeginInfo command_buffer_begin_info {};
     command_buffer_begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;

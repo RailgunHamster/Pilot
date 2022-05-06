@@ -474,7 +474,9 @@ void Pilot::PVulkanUtil::destroyMipmappedSampler(VkDevice device)
     m_mipmap_sampler_map.clear();
 }
 
-VkSampler Pilot::PVulkanUtil::getOrCreateNearestSampler(VkPhysicalDevice physical_device, VkDevice device)
+VkSampler Pilot::PVulkanUtil::getOrCreateNearestSampler(VkPhysicalDevice     physical_device,
+                                                        VkDevice             device,
+                                                        VkSamplerAddressMode mode)
 {
     if (m_nearest_sampler == VK_NULL_HANDLE)
     {
@@ -487,9 +489,9 @@ VkSampler Pilot::PVulkanUtil::getOrCreateNearestSampler(VkPhysicalDevice physica
         sampler_info.magFilter               = VK_FILTER_NEAREST;
         sampler_info.minFilter               = VK_FILTER_NEAREST;
         sampler_info.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-        sampler_info.addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        sampler_info.addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        sampler_info.addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        sampler_info.addressModeU            = mode;
+        sampler_info.addressModeV            = mode;
+        sampler_info.addressModeW            = mode;
         sampler_info.mipLodBias              = 0.0f;
         sampler_info.anisotropyEnable        = VK_FALSE;
         sampler_info.maxAnisotropy           = physical_device_properties.limits.maxSamplerAnisotropy; // close :1.0f
@@ -559,6 +561,7 @@ void Pilot::PVulkanUtil::destroyLinearSampler(VkDevice device)
 void Pilot::PVulkanUtil::bufferToImage(VkImage*              image,
                                        VkDeviceMemory*       memory,
                                        VkImageView*          view,
+                                       VkSampler*            sampler,
                                        class PVulkanContext* context,
                                        void*                 buffer,
                                        VkDeviceSize          buffer_size,
@@ -691,6 +694,25 @@ void Pilot::PVulkanUtil::bufferToImage(VkImage*              image,
     // Clean up staging resources
     vkFreeMemory(context->_device, staging_memory, nullptr);
     vkDestroyBuffer(context->_device, staging_buffer, nullptr);
+
+    // Create sampler
+    VkSamplerCreateInfo sampler_create_info = {};
+    sampler_create_info.sType               = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    sampler_create_info.magFilter           = VK_FILTER_LINEAR;
+    sampler_create_info.minFilter           = VK_FILTER_LINEAR;
+    sampler_create_info.mipmapMode          = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    sampler_create_info.addressModeU        = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    sampler_create_info.addressModeV        = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    sampler_create_info.addressModeW        = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    sampler_create_info.mipLodBias          = 0.0f;
+    sampler_create_info.compareOp           = VK_COMPARE_OP_NEVER;
+    sampler_create_info.minLod              = 0.0f;
+    sampler_create_info.maxLod              = 0.0f;
+    sampler_create_info.maxAnisotropy       = 1.0f;
+    if (vkCreateSampler(context->_device, &sampler_create_info, nullptr, sampler))
+    {
+        throw std::runtime_error("failed to create sampler");
+    }
 
     // Create image view
     VkImageViewCreateInfo view_create_info = {};

@@ -20,8 +20,8 @@ namespace Pilot
         Vector3    m_position {0.0f, 0.0f, 0.0f};
         Quaternion m_rotation {Quaternion::IDENTITY};
         Quaternion m_invRotation {Quaternion::IDENTITY};
-        float      m_znear {1000.0f};
-        float      m_zfar {0.1f};
+        float      m_znear {0.1f};
+        float      m_zfar {1000.0f};
 
         float m_exposure {1.0f};
 

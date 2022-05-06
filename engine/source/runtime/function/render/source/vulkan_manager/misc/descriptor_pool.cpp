@@ -12,7 +12,7 @@ bool Pilot::PVulkanManager::initializeDescriptorPool()
     pool_sizes[1].type            = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     pool_sizes[1].descriptorCount = 1 + 1 + 1 * m_max_vertex_blending_mesh_count;
     pool_sizes[2].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    pool_sizes[2].descriptorCount = 1 * m_max_material_count + 1;
+    pool_sizes[2].descriptorCount = 1 * m_max_material_count + 2;
     pool_sizes[3].type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     pool_sizes[3].descriptorCount = 3 + 5 * m_max_material_count + 1 + 1 + 5; // ImGui_ImplVulkan_CreateDeviceObjects
     pool_sizes[4].type            = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;

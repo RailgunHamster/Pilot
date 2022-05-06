@@ -380,6 +380,18 @@ namespace Pilot
                 }
                 ImGui::EndMenu();
             }
+            {
+                const auto& level    = SceneManager::getInstance().getCurrentScene();
+                const char* labels[] = {"open SSAO", "no SSAO", "only SSAO"};
+                if (ImGui::Button(labels[level->ssao_state ? 0 : 1]))
+                {
+                    level->toggleSSAO();
+                }
+                if (ImGui::Button(labels[2]))
+                {
+                    level->toggleSSAOOnly();
+                }
+            }
             ImGui::EndMenuBar();
         }
 
