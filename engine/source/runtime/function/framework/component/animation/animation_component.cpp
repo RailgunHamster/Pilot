@@ -136,15 +136,12 @@ namespace Pilot
 
     void AnimationComponent::animateBasicClip(float desired_ratio, BasicClip* basic_clip)
     {
-        auto                       clip_data = AnimationManager::getClipData(*basic_clip);
+        auto clip_data = AnimationManager::getClipData(*basic_clip);
 
-            AnimationPose pose(clip_data.m_clip,
-                               desired_ratio,
-                               clip_data.m_anim_skel_map);
-            m_skeleton.resetSkeleton();
-            m_skeleton.applyAdditivePose(pose);
-            m_skeleton.extractPose(pose);
-        
+        AnimationPose pose(clip_data.m_clip, desired_ratio, clip_data.m_anim_skel_map);
+        m_skeleton.resetSkeleton();
+        m_skeleton.applyAdditivePose(pose);
+        m_skeleton.extractPose(pose);
 
         m_skeleton.applyPose(pose);
         m_animation_result = m_skeleton.outputAnimationResult();
