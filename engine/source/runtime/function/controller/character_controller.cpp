@@ -50,7 +50,7 @@ namespace Pilot
         hits.clear();
 
         // side pass
-        std::optional<float> side_distance;
+        bool side_zero = false;
         if (physics_scene->sweep(m_rigidbody_shape,
                                  world_transform.getMatrix(),
                                  horizontal_direction,
@@ -58,8 +58,17 @@ namespace Pilot
                                  hits))
         {
             const float distance = hits[0].hit_distance;
-            side_distance        = distance;
-            final_position += distance * horizontal_direction;
+            side_zero            = distance <= .001f;
+            if (side_zero)
+            {
+                const float   length = 1.f / (horizontal_direction.dotProduct(-hits[0].hit_normal));
+                const Vector3 v      = (hits[0].hit_normal + horizontal_direction * length).normalisedCopy();
+                final_position += v * horizontal_displacement.length() * v.dotProduct(horizontal_direction);
+            }
+            else
+            {
+                final_position += distance * horizontal_direction;
+            }
         }
         else
         {
@@ -77,8 +86,7 @@ namespace Pilot
                                  vertical_displacement.length(),
                                  hits))
         {
-            const float distance =
-                side_distance && side_distance.value() <= .001f ? hits.back().hit_distance : hits[0].hit_distance;
+            const float distance = side_zero && hits.size() > 1 ? hits[1].hit_distance : hits[0].hit_distance;
             final_position += distance * vertical_direction;
         }
         else
