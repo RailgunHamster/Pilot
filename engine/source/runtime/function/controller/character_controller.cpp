@@ -90,7 +90,7 @@ namespace Pilot
             {
                 if (hits.size() > 1)
                 {
-                    final_position += hits[1].hit_distance * vertical_direction;
+                    final_position += hits.back().hit_distance * vertical_direction;
                 }
                 else if (vertical_direction.z > 0.f)
                 {
