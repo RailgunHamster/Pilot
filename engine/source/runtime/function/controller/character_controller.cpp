@@ -86,8 +86,21 @@ namespace Pilot
                                  vertical_displacement.length(),
                                  hits))
         {
-            const float distance = side_zero && hits.size() > 1 ? hits[1].hit_distance : hits[0].hit_distance;
-            final_position += distance * vertical_direction;
+            if (side_zero && hits[0].hit_distance < .001f)
+            {
+                if (hits.size() > 1)
+                {
+                    final_position += hits[1].hit_distance * vertical_direction;
+                }
+                else if (vertical_direction.z > 0.f)
+                {
+                    final_position += vertical_displacement;
+                }
+            }
+            else
+            {
+                final_position += hits[0].hit_distance * vertical_direction;
+            }
         }
         else
         {
